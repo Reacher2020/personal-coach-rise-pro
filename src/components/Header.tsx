@@ -28,7 +28,7 @@ export const Header = ({ onMenuToggle, isSidebarOpen }: HeaderProps) => {
             <span className="text-hero-foreground font-bold text-sm">PT</span>
           </div>
           <h1 className="text-xl font-bold text-foreground hidden sm:block">
-            Personal Trainer Pro
+            Personal Coach Rise Pro
           </h1>
         </div>
       </div>
