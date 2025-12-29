@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { useLocation, useNavigate } from "react-router-dom";
 import { 
   LayoutDashboard, 
   Users, 
@@ -21,8 +22,7 @@ const menuItems = [
   {
     icon: LayoutDashboard,
     label: "Dashboard",
-    path: "/",
-    active: true
+    path: "/"
   },
   {
     icon: Users,
@@ -62,6 +62,14 @@ const menuItems = [
 ];
 
 export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleNavigation = (path: string) => {
+    navigate(path);
+    onClose();
+  };
+
   return (
     <>
       {/* Mobile overlay */}
@@ -92,13 +100,15 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
         <nav className="p-4 space-y-2">
           {menuItems.map((item) => {
             const Icon = item.icon;
+            const isActive = location.pathname === item.path;
             return (
               <Button
                 key={item.path}
-                variant={item.active ? "default" : "ghost"}
+                variant={isActive ? "default" : "ghost"}
+                onClick={() => handleNavigation(item.path)}
                 className={cn(
                   "w-full justify-start gap-3",
-                  item.active && "bg-primary text-primary-foreground shadow-glow"
+                  isActive && "bg-primary text-primary-foreground shadow-glow"
                 )}
               >
                 <Icon className="h-5 w-5" />
