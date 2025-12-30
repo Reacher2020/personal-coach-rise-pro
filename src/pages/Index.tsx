@@ -81,7 +81,7 @@ const Index = () => {
             Dzień dobry! 👋
           </h1>
           <p className="text-muted-foreground">
-            Masz dziś zaplanowanych 5vsesji treningowych. Pora osiągnąć nowe cele!
+            Masz dziś zaplanowanych 5 sesji treningowych. Pora osiągnąć nowe cele!
           </p>
         </div>
 
