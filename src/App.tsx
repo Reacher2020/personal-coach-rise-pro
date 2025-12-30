@@ -9,6 +9,7 @@ import CalendarPage from "./pages/Calendar";
 import Workouts from "./pages/Workouts";
 import Progress from "./pages/Progress";
 import Payments from "./pages/Payments";
+import Messages from "./pages/Messages";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +27,7 @@ const App = () => (
           <Route path="/workouts" element={<Workouts />} />
           <Route path="/progress" element={<Progress />} />
           <Route path="/payments" element={<Payments />} />
+          <Route path="/messages" element={<Messages />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
