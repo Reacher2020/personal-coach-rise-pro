@@ -25,7 +25,7 @@ export const Header = ({ onMenuToggle, isSidebarOpen }: HeaderProps) => {
         
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
-            <span className="text-hero-foreground font-bold text-sm">PT</span>
+            <span className="text-hero-foreground font-bold text-sm">PCR PRO</span>
           </div>
           <h1 className="text-xl font-bold text-foreground hidden sm:block">
             Personal Coach Rise Pro
