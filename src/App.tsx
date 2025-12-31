@@ -3,7 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./src/pages/Coach/Index";
+import Index from "./pages/Coach/Index";
 import Clients from "./pages/Coach/Clients";
 import CalendarPage from "./pages/Coach/Calendar";
 import Workouts from "./pages/Coach/Workouts";
@@ -22,14 +22,14 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/clients" element={<Clients />} />
-          <Route path="/calendar" element={<CalendarPage />} />
-          <Route path="/workouts" element={<Workouts />} />
-          <Route path="/progress" element={<Progress />} />
-          <Route path="/payments" element={<Payments />} />
-          <Route path="/messages" element={<Messages />} />
-          <Route path="/settings" element={<Settings />} />
+          <Route path="/Coach/" element={<Index />} />
+          <Route path="/Coach/clients" element={<Clients />} />
+          <Route path="/Coach/calendar" element={<CalendarPage />} />
+          <Route path="/Coach/workouts" element={<Workouts />} />
+          <Route path="/Coach/progress" element={<Progress />} />
+          <Route path="/Coach/payments" element={<Payments />} />
+          <Route path="/Coach/messages" element={<Messages />} />
+          <Route path="/Coach/settings" element={<Settings />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
