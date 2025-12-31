@@ -11,7 +11,7 @@ import Progress from "./pages/coach/Progress";
 import Payments from "./pages/coach/Payments";
 import Messages from "./pages/coach/Messages";
 import Settings from "./pages/coach/Settings";
-import NotFound from "./pages/NotFound";
+import NotFound from "./pages/coach/NotFound";
 
 const queryClient = new QueryClient();
 
