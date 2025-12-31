@@ -3,7 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./coach/Index";
+import Index from "./pages/coach/Index";
 import Clients from "./pages/coach/Clients";
 import CalendarPage from "./pages/coach/Calendar";
 import Workouts from "./pages/coach/Workouts";
