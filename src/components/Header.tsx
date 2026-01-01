@@ -1,7 +1,16 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Menu, X, User, Bell, Settings } from "lucide-react";
+import { Menu, X, User, Bell, Settings, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
+import { useNavigate } from "react-router-dom";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface HeaderProps {
   onMenuToggle: () => void;
@@ -9,7 +18,13 @@ interface HeaderProps {
 }
 
 export const Header = ({ onMenuToggle, isSidebarOpen }: HeaderProps) => {
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/auth');
+  };
 
   return (
     <header className="bg-card border-b border-border h-16 flex items-center justify-between px-4 lg:px-6">
@@ -25,10 +40,10 @@ export const Header = ({ onMenuToggle, isSidebarOpen }: HeaderProps) => {
         
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
-            <span className="text-hero-foreground font-bold text-sm"> PCR PRO </span>
+            <span className="text-hero-foreground font-bold text-sm">PT</span>
           </div>
           <h1 className="text-xl font-bold text-foreground hidden sm:block">
-            Personal Coach Rise Pro
+            Personal Trainer Pro
           </h1>
         </div>
       </div>
@@ -41,23 +56,32 @@ export const Header = ({ onMenuToggle, isSidebarOpen }: HeaderProps) => {
           </span>
         </Button>
         
-        <Button variant="ghost" size="icon">
+        <Button variant="ghost" size="icon" onClick={() => navigate('/settings')}>
           <Settings className="h-5 w-5" />
         </Button>
         
-        <div className="relative">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setIsProfileOpen(!isProfileOpen)}
-            className={cn(
-              "rounded-full",
-              isProfileOpen && "ring-2 ring-primary"
-            )}
-          >
-            <User className="h-5 w-5" />
-          </Button>
-        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="rounded-full">
+              <User className="h-5 w-5" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <div className="px-2 py-1.5">
+              <p className="text-sm font-medium truncate">{user?.email}</p>
+            </div>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => navigate('/settings')}>
+              <Settings className="mr-2 h-4 w-4" />
+              Ustawienia
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
+              <LogOut className="mr-2 h-4 w-4" />
+              Wyloguj się
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </header>
   );
