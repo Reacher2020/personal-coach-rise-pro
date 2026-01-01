@@ -1,13 +1,16 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserRole } from '@/hooks/useUserRole';
+import { useInvitations } from '@/hooks/useInvitations';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Dumbbell, Loader2 } from 'lucide-react';
+import { Dumbbell, Loader2, Mail, UserPlus } from 'lucide-react';
 import { z } from 'zod';
 
 const emailSchema = z.string().trim().email({ message: 'Nieprawidłowy adres email' }).max(255);
@@ -16,7 +19,10 @@ const nameSchema = z.string().trim().max(100).optional();
 
 const Auth = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user, signIn, signUp, loading: authLoading } = useAuth();
+  const { role, loading: roleLoading, refetchRole } = useUserRole();
+  const { getInvitationByToken, acceptInvitation } = useInvitations();
   const { toast } = useToast();
   
   const [isLoading, setIsLoading] = useState(false);
@@ -25,12 +31,72 @@ const Auth = () => {
   const [signupEmail, setSignupEmail] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
   const [signupName, setSignupName] = useState('');
+  const [inviteToken, setInviteToken] = useState<string | null>(null);
+  const [inviteRole, setInviteRole] = useState<string | null>(null);
+  const [inviteValid, setInviteValid] = useState(false);
+  const [defaultTab, setDefaultTab] = useState('login');
 
+  // Check for invite token in URL
   useEffect(() => {
-    if (user && !authLoading) {
-      navigate('/', { replace: true });
+    const token = searchParams.get('invite');
+    if (token) {
+      setInviteToken(token);
+      checkInvitation(token);
     }
-  }, [user, authLoading, navigate]);
+  }, [searchParams]);
+
+  const checkInvitation = async (token: string) => {
+    const { data: invitation } = await getInvitationByToken(token);
+    if (invitation) {
+      setInviteRole(invitation.role);
+      setInviteValid(true);
+      setSignupEmail(invitation.email);
+      setDefaultTab('signup');
+    }
+  };
+
+  // Handle redirect after login based on role
+  useEffect(() => {
+    if (user && !authLoading && !roleLoading) {
+      // If user just registered with an invite, accept it
+      if (inviteToken && inviteValid) {
+        handleAcceptInvitation();
+      } else {
+        redirectBasedOnRole();
+      }
+    }
+  }, [user, authLoading, roleLoading, role]);
+
+  const handleAcceptInvitation = async () => {
+    if (!inviteToken) return;
+    
+    const { success } = await acceptInvitation(inviteToken);
+    if (success) {
+      await refetchRole();
+      // Clear invite token from URL
+      window.history.replaceState({}, '', '/auth');
+      setInviteToken(null);
+      setInviteValid(false);
+    }
+    redirectBasedOnRole();
+  };
+
+  const redirectBasedOnRole = () => {
+    if (role === 'admin') {
+      navigate('/admin', { replace: true });
+    } else if (role === 'coach') {
+      navigate('/', { replace: true });
+    } else if (role === 'client') {
+      navigate('/client', { replace: true });
+    } else {
+      // No role assigned - show message
+      toast({
+        title: 'Brak uprawnień',
+        description: 'Twoje konto nie ma przypisanej roli. Skontaktuj się z administratorem.',
+        variant: 'destructive',
+      });
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -97,6 +163,15 @@ const Auth = () => {
     }
   };
 
+  const getRoleLabel = (role: string) => {
+    switch (role) {
+      case 'coach': return 'Trener';
+      case 'client': return 'Klient';
+      case 'admin': return 'Administrator';
+      default: return role;
+    }
+  };
+
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -118,15 +193,35 @@ const Auth = () => {
           </div>
         </div>
 
+        {/* Invitation Banner */}
+        {inviteValid && inviteRole && (
+          <Card className="border-primary/50 bg-primary/10">
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center">
+                <UserPlus className="h-5 w-5 text-primary" />
+              </div>
+              <div className="flex-1">
+                <p className="font-medium text-foreground">Zaproszenie do rejestracji</p>
+                <p className="text-sm text-muted-foreground">
+                  Zostałeś zaproszony jako <Badge variant="secondary">{getRoleLabel(inviteRole)}</Badge>
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         <Card className="border-border shadow-elegant">
           <CardHeader className="pb-4">
             <CardTitle className="text-center text-lg">Witaj!</CardTitle>
             <CardDescription className="text-center">
-              Zaloguj się lub utwórz nowe konto
+              {inviteValid 
+                ? 'Utwórz konto, aby zaakceptować zaproszenie'
+                : 'Zaloguj się lub utwórz nowe konto'
+              }
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="login" className="w-full">
+            <Tabs defaultValue={defaultTab} key={defaultTab} className="w-full">
               <TabsList className="grid w-full grid-cols-2 mb-6">
                 <TabsTrigger value="login">Logowanie</TabsTrigger>
                 <TabsTrigger value="signup">Rejestracja</TabsTrigger>
@@ -193,7 +288,7 @@ const Auth = () => {
                       value={signupEmail}
                       onChange={(e) => setSignupEmail(e.target.value)}
                       required
-                      disabled={isLoading}
+                      disabled={isLoading || inviteValid}
                     />
                   </div>
                   <div className="space-y-2">
