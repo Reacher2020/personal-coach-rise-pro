@@ -20,6 +20,7 @@ export type Database = {
           created_at: string
           email: string | null
           id: string
+          invited_by: string | null
           name: string
           notes: string | null
           phone: string | null
@@ -32,6 +33,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: string
+          invited_by?: string | null
           name: string
           notes?: string | null
           phone?: string | null
@@ -44,6 +46,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: string
+          invited_by?: string | null
           name?: string
           notes?: string | null
           phone?: string | null
@@ -95,6 +98,42 @@ export type Database = {
           theme?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      invitations: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invited_by: string
+          role: Database["public"]["Enums"]["app_role"]
+          status: string
+          token: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          email: string
+          expires_at?: string
+          id?: string
+          invited_by: string
+          role: Database["public"]["Enums"]["app_role"]
+          status?: string
+          token?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          status?: string
+          token?: string
         }
         Relationships: []
       }
@@ -195,6 +234,7 @@ export type Database = {
           experience_years: number | null
           full_name: string | null
           id: string
+          invited_by: string | null
           phone: string | null
           specialization: string | null
           updated_at: string
@@ -208,6 +248,7 @@ export type Database = {
           experience_years?: number | null
           full_name?: string | null
           id?: string
+          invited_by?: string | null
           phone?: string | null
           specialization?: string | null
           updated_at?: string
@@ -221,6 +262,7 @@ export type Database = {
           experience_years?: number | null
           full_name?: string | null
           id?: string
+          invited_by?: string | null
           phone?: string | null
           specialization?: string | null
           updated_at?: string
@@ -278,15 +320,50 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      accept_invitation: {
+        Args: { invitation_token: string }
+        Returns: boolean
+      }
+      get_user_role: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "coach" | "client"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -413,6 +490,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "coach", "client"],
+    },
   },
 } as const

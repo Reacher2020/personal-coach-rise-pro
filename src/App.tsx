@@ -4,7 +4,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
+import { UserRoleProvider } from "@/hooks/useUserRole";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { RoleBasedRoute } from "@/components/RoleBasedRoute";
 import Index from "./pages/Index";
 import Clients from "./pages/Clients";
 import CalendarPage from "./pages/Calendar";
@@ -15,6 +17,8 @@ import Messages from "./pages/Messages";
 import Settings from "./pages/Settings";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import ClientDashboard from "./pages/client/ClientDashboard";
 
 const queryClient = new QueryClient();
 
@@ -25,19 +29,90 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <Routes>
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-            <Route path="/clients" element={<ProtectedRoute><Clients /></ProtectedRoute>} />
-            <Route path="/calendar" element={<ProtectedRoute><CalendarPage /></ProtectedRoute>} />
-            <Route path="/workouts" element={<ProtectedRoute><Workouts /></ProtectedRoute>} />
-            <Route path="/progress" element={<ProtectedRoute><Progress /></ProtectedRoute>} />
-            <Route path="/payments" element={<ProtectedRoute><Payments /></ProtectedRoute>} />
-            <Route path="/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
-            <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <UserRoleProvider>
+            <Routes>
+              <Route path="/auth" element={<Auth />} />
+              
+              {/* Admin Routes */}
+              <Route path="/admin" element={
+                <ProtectedRoute>
+                  <RoleBasedRoute allowedRoles={['admin']}>
+                    <AdminDashboard />
+                  </RoleBasedRoute>
+                </ProtectedRoute>
+              } />
+              
+              {/* Client Routes */}
+              <Route path="/client" element={
+                <ProtectedRoute>
+                  <RoleBasedRoute allowedRoles={['client']}>
+                    <ClientDashboard />
+                  </RoleBasedRoute>
+                </ProtectedRoute>
+              } />
+              
+              {/* Coach Routes */}
+              <Route path="/" element={
+                <ProtectedRoute>
+                  <RoleBasedRoute allowedRoles={['coach']}>
+                    <Index />
+                  </RoleBasedRoute>
+                </ProtectedRoute>
+              } />
+              <Route path="/clients" element={
+                <ProtectedRoute>
+                  <RoleBasedRoute allowedRoles={['coach']}>
+                    <Clients />
+                  </RoleBasedRoute>
+                </ProtectedRoute>
+              } />
+              <Route path="/calendar" element={
+                <ProtectedRoute>
+                  <RoleBasedRoute allowedRoles={['coach']}>
+                    <CalendarPage />
+                  </RoleBasedRoute>
+                </ProtectedRoute>
+              } />
+              <Route path="/workouts" element={
+                <ProtectedRoute>
+                  <RoleBasedRoute allowedRoles={['coach']}>
+                    <Workouts />
+                  </RoleBasedRoute>
+                </ProtectedRoute>
+              } />
+              <Route path="/progress" element={
+                <ProtectedRoute>
+                  <RoleBasedRoute allowedRoles={['coach']}>
+                    <Progress />
+                  </RoleBasedRoute>
+                </ProtectedRoute>
+              } />
+              <Route path="/payments" element={
+                <ProtectedRoute>
+                  <RoleBasedRoute allowedRoles={['coach']}>
+                    <Payments />
+                  </RoleBasedRoute>
+                </ProtectedRoute>
+              } />
+              <Route path="/messages" element={
+                <ProtectedRoute>
+                  <RoleBasedRoute allowedRoles={['coach']}>
+                    <Messages />
+                  </RoleBasedRoute>
+                </ProtectedRoute>
+              } />
+              <Route path="/settings" element={
+                <ProtectedRoute>
+                  <RoleBasedRoute allowedRoles={['coach']}>
+                    <Settings />
+                  </RoleBasedRoute>
+                </ProtectedRoute>
+              } />
+              
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </UserRoleProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
