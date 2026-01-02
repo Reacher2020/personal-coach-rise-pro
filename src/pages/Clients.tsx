@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import DashboardLayout from "@/components/Coach_Layout";
 import { ClientCard } from "@/components/ClientCard";
 import { Button } from "@/components/ui/button";
@@ -47,7 +47,7 @@ const ClientsPage = () => {
   const [invitations, setInvitations] = useState<any[]>([]);
   const [invitationsLoading, setInvitationsLoading] = useState(true);
 
-  const { clients, loading, addClient, deleteClient, getClientStats } = useClients();
+  const { clients, loading, addClient, updateClient, deleteClient, getClientStats } = useClients();
   const { createInvitation, getMyInvitations, deleteInvitation, loading: inviteLoading } = useInvitations();
   const { toast } = useToast();
 
@@ -56,6 +56,14 @@ const ClientsPage = () => {
   useEffect(() => {
     loadInvitations();
   }, []);
+
+  const handleUpdateClient = useCallback(async (id: string, data: { name: string; email: string | null; phone: string | null; status: string; progress: number }) => {
+    await updateClient(id, data);
+  }, [updateClient]);
+
+  const handleDeleteClient = useCallback(async (id: string) => {
+    await deleteClient(id);
+  }, [deleteClient]);
 
   const loadInvitations = async () => {
     setInvitationsLoading(true);
@@ -329,10 +337,14 @@ const ClientsPage = () => {
                 {filteredClients.map((client) => (
                   <ClientCard
                     key={client.id}
+                    id={client.id}
                     name={client.name}
                     email={client.email || ""}
+                    phone={client.phone || ""}
                     status={client.status as "active" | "inactive" | "new"}
                     progress={client.progress || 0}
+                    onUpdate={handleUpdateClient}
+                    onDelete={handleDeleteClient}
                   />
                 ))}
               </div>

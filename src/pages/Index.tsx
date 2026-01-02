@@ -42,6 +42,7 @@ const Index = () => {
 
   const recentClients = [
     {
+      id: "1",
       name: "Anna Kowalska",
       email: "anna.kowalska@email.com",
       status: "active" as const,
@@ -49,6 +50,7 @@ const Index = () => {
       progress: 85,
     },
     {
+      id: "2",
       name: "Marcin Nowak",
       email: "marcin.nowak@email.com",
       status: "new" as const,
@@ -56,6 +58,7 @@ const Index = () => {
       progress: 45,
     },
     {
+      id: "3",
       name: "Katarzyna Wiśniewska",
       email: "katarzyna.w@email.com",
       status: "active" as const,
