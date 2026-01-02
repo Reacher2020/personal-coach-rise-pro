@@ -1,33 +1,123 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/Coach_Layout";
 import { ClientCard } from "@/components/ClientCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Search, Filter, Users } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Plus, Search, Filter, Users, Mail, Copy, Trash2, Loader2 } from "lucide-react";
+import { useClients } from "@/hooks/useClients";
+import { useInvitations } from "@/hooks/useInvitations";
+import { useToast } from "@/hooks/use-toast";
+import { format } from "date-fns";
+import { pl } from "date-fns/locale";
 
 const ClientsPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
+  const [newClientName, setNewClientName] = useState("");
+  const [newClientEmail, setNewClientEmail] = useState("");
+  const [newClientPhone, setNewClientPhone] = useState("");
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [invitations, setInvitations] = useState<any[]>([]);
+  const [invitationsLoading, setInvitationsLoading] = useState(true);
 
-  const clients = [
-    { name: "Anna Kowalska", email: "anna.kowalska@email.com", status: "active" as const, nextSession: "Dzisiaj, 15:00", progress: 85 },
-    { name: "Marcin Nowak", email: "marcin.nowak@email.com", status: "new" as const, nextSession: "Jutro, 10:00", progress: 45 },
-    { name: "Katarzyna Wiśniewska", email: "katarzyna.w@email.com", status: "active" as const, nextSession: "Piątek, 16:30", progress: 92 },
-    { name: "Jan Kowalski", email: "jan.kowalski@email.com", status: "active" as const, nextSession: "Środa, 09:00", progress: 78 },
-    { name: "Maria Nowak", email: "maria.nowak@email.com", status: "active" as const, nextSession: "Czwartek, 11:00", progress: 65 },
-    { name: "Piotr Zieliński", email: "piotr.z@email.com", status: "inactive" as const, progress: 30 },
-    { name: "Ewa Kowalczyk", email: "ewa.k@email.com", status: "active" as const, nextSession: "Poniedziałek, 19:00", progress: 88 },
-    { name: "Tomasz Wiśniewski", email: "tomasz.w@email.com", status: "new" as const, nextSession: "Wtorek, 14:00", progress: 20 }
-  ];
+  const { clients, loading, addClient, deleteClient, getClientStats } = useClients();
+  const { createInvitation, getMyInvitations, deleteInvitation, loading: inviteLoading } = useInvitations();
+  const { toast } = useToast();
 
-  const filteredClients = clients.filter(client =>
-    client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    client.email.toLowerCase().includes(searchQuery.toLowerCase())
+  const stats = getClientStats();
+
+  useEffect(() => {
+    loadInvitations();
+  }, []);
+
+  const loadInvitations = async () => {
+    setInvitationsLoading(true);
+    const { data } = await getMyInvitations();
+    if (data) {
+      setInvitations(data.filter((inv) => inv.role === "client"));
+    }
+    setInvitationsLoading(false);
+  };
+
+  const filteredClients = clients.filter(
+    (client) =>
+      client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (client.email && client.email.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
-  const activeCount = clients.filter(c => c.status === "active").length;
-  const newCount = clients.filter(c => c.status === "new").length;
-  const inactiveCount = clients.filter(c => c.status === "inactive").length;
+  const handleAddClient = async () => {
+    if (!newClientName.trim()) return;
+
+    const { error } = await addClient({
+      name: newClientName,
+      email: newClientEmail || null,
+      phone: newClientPhone || null,
+      status: "new",
+    });
+
+    if (!error) {
+      setNewClientName("");
+      setNewClientEmail("");
+      setNewClientPhone("");
+      setIsAddDialogOpen(false);
+    }
+  };
+
+  const handleSendInvitation = async () => {
+    if (!inviteEmail.trim()) return;
+
+    const { error } = await createInvitation(inviteEmail, "client");
+
+    if (!error) {
+      setInviteEmail("");
+      setIsInviteDialogOpen(false);
+      loadInvitations();
+    }
+  };
+
+  const handleCopyInviteLink = async (token: string) => {
+    const link = `${window.location.origin}/auth?invite=${token}`;
+    await navigator.clipboard.writeText(link);
+    toast({
+      title: "Link skopiowany",
+      description: "Link do zaproszenia został skopiowany do schowka",
+    });
+  };
+
+  const handleDeleteInvitation = async (id: string) => {
+    await deleteInvitation(id);
+    loadInvitations();
+  };
+
+  const pendingInvitations = invitations.filter((inv) => inv.status === "pending");
+  const acceptedInvitations = invitations.filter((inv) => inv.status === "accepted");
 
   return (
     <DashboardLayout>
@@ -42,10 +132,119 @@ const ClientsPage = () => {
               Zarządzaj swoimi klientami i śledź ich postępy
             </p>
           </div>
-          <Button className="bg-primary text-primary-foreground shadow-glow">
-            <Plus className="h-4 w-4 mr-2" />
-            Dodaj klienta
-          </Button>
+          <div className="flex gap-2">
+            <Dialog open={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="border-border">
+                  <Mail className="h-4 w-4 mr-2" />
+                  Wyślij zaproszenie
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Zaproś klienta</DialogTitle>
+                  <DialogDescription>
+                    Wyślij zaproszenie email do nowego klienta. Po rejestracji
+                    zostanie automatycznie przypisany do Ciebie.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="inviteEmail">Email klienta</Label>
+                    <Input
+                      id="inviteEmail"
+                      type="email"
+                      placeholder="klient@email.com"
+                      value={inviteEmail}
+                      onChange={(e) => setInviteEmail(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsInviteDialogOpen(false)}
+                  >
+                    Anuluj
+                  </Button>
+                  <Button
+                    onClick={handleSendInvitation}
+                    disabled={inviteLoading || !inviteEmail.trim()}
+                  >
+                    {inviteLoading && (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    )}
+                    Wyślij zaproszenie
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="bg-primary text-primary-foreground shadow-glow">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Dodaj klienta
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Dodaj klienta ręcznie</DialogTitle>
+                  <DialogDescription>
+                    Dodaj nowego klienta bez wysyłania zaproszenia email.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Imię i nazwisko *</Label>
+                    <Input
+                      id="name"
+                      placeholder="Jan Kowalski"
+                      value={newClientName}
+                      onChange={(e) => setNewClientName(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="jan@email.com"
+                      value={newClientEmail}
+                      onChange={(e) => setNewClientEmail(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Telefon</Label>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      placeholder="+48 123 456 789"
+                      value={newClientPhone}
+                      onChange={(e) => setNewClientPhone(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsAddDialogOpen(false)}
+                  >
+                    Anuluj
+                  </Button>
+                  <Button
+                    onClick={handleAddClient}
+                    disabled={loading || !newClientName.trim()}
+                  >
+                    {loading && (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    )}
+                    Dodaj klienta
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
 
         {/* Stats Cards */}
@@ -56,7 +255,9 @@ const ClientsPage = () => {
                 <Users className="h-6 w-6 text-primary" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground">{activeCount}</p>
+                <p className="text-2xl font-bold text-foreground">
+                  {stats.activeCount}
+                </p>
                 <p className="text-sm text-muted-foreground">Aktywnych</p>
               </div>
             </CardContent>
@@ -67,7 +268,9 @@ const ClientsPage = () => {
                 <Users className="h-6 w-6 text-secondary-foreground" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground">{newCount}</p>
+                <p className="text-2xl font-bold text-foreground">
+                  {stats.newCount}
+                </p>
                 <p className="text-sm text-muted-foreground">Nowych</p>
               </div>
             </CardContent>
@@ -78,50 +281,195 @@ const ClientsPage = () => {
                 <Users className="h-6 w-6 text-muted-foreground" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground">{inactiveCount}</p>
+                <p className="text-2xl font-bold text-foreground">
+                  {stats.inactiveCount}
+                </p>
                 <p className="text-sm text-muted-foreground">Nieaktywnych</p>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Search and Filter */}
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Szukaj klienta..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-card border-border"
-            />
-          </div>
-          <Button variant="outline" className="border-border">
-            <Filter className="h-4 w-4 mr-2" />
-            Filtry
-          </Button>
-        </div>
+        {/* Main Content Tabs */}
+        <Tabs defaultValue="clients" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="clients">
+              Klienci ({clients.length})
+            </TabsTrigger>
+            <TabsTrigger value="invitations">
+              Zaproszenia ({pendingInvitations.length})
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Clients Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {filteredClients.map((client, index) => (
-            <ClientCard key={index} {...client} />
-          ))}
-        </div>
+          <TabsContent value="clients" className="space-y-4">
+            {/* Search and Filter */}
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Szukaj klienta..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 bg-card border-border"
+                />
+              </div>
+              <Button variant="outline" className="border-border">
+                <Filter className="h-4 w-4 mr-2" />
+                Filtry
+              </Button>
+            </div>
 
-        {filteredClients.length === 0 && (
-          <Card className="bg-card border-border">
-            <CardContent className="p-12 text-center">
-              <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-foreground mb-2">
-                Nie znaleziono klientów
-              </h3>
-              <p className="text-muted-foreground">
-                Spróbuj zmienić kryteria wyszukiwania
-              </p>
-            </CardContent>
-          </Card>
-        )}
+            {/* Clients Grid */}
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : filteredClients.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                {filteredClients.map((client) => (
+                  <ClientCard
+                    key={client.id}
+                    name={client.name}
+                    email={client.email || ""}
+                    status={client.status as "active" | "inactive" | "new"}
+                    progress={client.progress || 0}
+                  />
+                ))}
+              </div>
+            ) : (
+              <Card className="bg-card border-border">
+                <CardContent className="p-12 text-center">
+                  <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-foreground mb-2">
+                    {searchQuery
+                      ? "Nie znaleziono klientów"
+                      : "Brak klientów"}
+                  </h3>
+                  <p className="text-muted-foreground mb-4">
+                    {searchQuery
+                      ? "Spróbuj zmienić kryteria wyszukiwania"
+                      : "Dodaj pierwszego klienta lub wyślij zaproszenie"}
+                  </p>
+                  {!searchQuery && (
+                    <div className="flex gap-2 justify-center">
+                      <Button
+                        variant="outline"
+                        onClick={() => setIsInviteDialogOpen(true)}
+                      >
+                        <Mail className="h-4 w-4 mr-2" />
+                        Wyślij zaproszenie
+                      </Button>
+                      <Button onClick={() => setIsAddDialogOpen(true)}>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Dodaj klienta
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          <TabsContent value="invitations" className="space-y-4">
+            {invitationsLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : invitations.length > 0 ? (
+              <Card className="bg-card border-border">
+                <CardContent className="p-0">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Data wysłania</TableHead>
+                        <TableHead>Wygasa</TableHead>
+                        <TableHead className="text-right">Akcje</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {invitations.map((invitation) => (
+                        <TableRow key={invitation.id}>
+                          <TableCell className="font-medium">
+                            {invitation.email}
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant={
+                                invitation.status === "accepted"
+                                  ? "default"
+                                  : "secondary"
+                              }
+                            >
+                              {invitation.status === "accepted"
+                                ? "Zaakceptowane"
+                                : "Oczekujące"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {format(
+                              new Date(invitation.created_at),
+                              "d MMM yyyy",
+                              { locale: pl }
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {format(
+                              new Date(invitation.expires_at),
+                              "d MMM yyyy",
+                              { locale: pl }
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex gap-2 justify-end">
+                              {invitation.status === "pending" && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() =>
+                                    handleCopyInviteLink(invitation.token)
+                                  }
+                                >
+                                  <Copy className="h-4 w-4" />
+                                </Button>
+                              )}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() =>
+                                  handleDeleteInvitation(invitation.id)
+                                }
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card className="bg-card border-border">
+                <CardContent className="p-12 text-center">
+                  <Mail className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-foreground mb-2">
+                    Brak zaproszeń
+                  </h3>
+                  <p className="text-muted-foreground mb-4">
+                    Wyślij zaproszenie email do nowego klienta
+                  </p>
+                  <Button onClick={() => setIsInviteDialogOpen(true)}>
+                    <Mail className="h-4 w-4 mr-2" />
+                    Wyślij zaproszenie
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
     </DashboardLayout>
   );
