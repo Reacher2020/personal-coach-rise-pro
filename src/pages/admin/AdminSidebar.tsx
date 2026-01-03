@@ -16,7 +16,7 @@ interface AdminSidebarProps {
 
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/admin" },
-  { icon: Users, label: "Trenerzy", path: "/admin/coaches" },
+  { icon: Users, label: "Użytkownicy", path: "/admin/users" },
   { icon: Settings, label: "Ustawienia", path: "/admin/settings" },
 ];
 
