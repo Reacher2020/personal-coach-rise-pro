@@ -350,6 +350,7 @@ export type Database = {
         Args: { invitation_token: string }
         Returns: boolean
       }
+      admin_exists: { Args: never; Returns: boolean }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
@@ -361,6 +362,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      setup_first_admin: { Args: { target_user_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "coach" | "client"

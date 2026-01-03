@@ -10,7 +10,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Dumbbell, Loader2, Mail, UserPlus } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { Dumbbell, Loader2, Mail, UserPlus, Shield } from 'lucide-react';
 import { z } from 'zod';
 
 const emailSchema = z.string().trim().email({ message: 'Nieprawidłowy adres email' }).max(255);
@@ -35,6 +36,29 @@ const Auth = () => {
   const [inviteRole, setInviteRole] = useState<string | null>(null);
   const [inviteValid, setInviteValid] = useState(false);
   const [defaultTab, setDefaultTab] = useState('login');
+  const [noAdminExists, setNoAdminExists] = useState(false);
+  const [isAdminSetup, setIsAdminSetup] = useState(false);
+  const [checkingAdmin, setCheckingAdmin] = useState(true);
+
+  // Check if any admin exists
+  useEffect(() => {
+    const checkAdminExists = async () => {
+      try {
+        const { data, error } = await supabase.rpc('admin_exists');
+        if (!error) {
+          setNoAdminExists(!data);
+          if (!data) {
+            setDefaultTab('signup');
+          }
+        }
+      } catch (e) {
+        // Function might not exist yet, ignore
+      } finally {
+        setCheckingAdmin(false);
+      }
+    };
+    checkAdminExists();
+  }, []);
 
   // Check for invite token in URL
   useEffect(() => {
@@ -58,14 +82,51 @@ const Auth = () => {
   // Handle redirect after login based on role
   useEffect(() => {
     if (user && !authLoading && !roleLoading) {
-      // If user just registered with an invite, accept it
-      if (inviteToken && inviteValid) {
+      // If this is admin setup, handle it
+      if (isAdminSetup && noAdminExists) {
+        handleAdminSetup();
+      } else if (inviteToken && inviteValid) {
         handleAcceptInvitation();
-      } else {
+      } else if (role) {
         redirectBasedOnRole();
       }
     }
-  }, [user, authLoading, roleLoading, role]);
+  }, [user, authLoading, roleLoading, role, isAdminSetup]);
+
+  const handleAdminSetup = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase.rpc('setup_first_admin', { target_user_id: user.id });
+      
+      if (error) throw error;
+      
+      if (data) {
+        toast({
+          title: 'Administrator utworzony!',
+          description: 'Twoje konto zostało skonfigurowane jako administrator.',
+        });
+        await refetchRole();
+        setNoAdminExists(false);
+        setIsAdminSetup(false);
+        navigate('/admin', { replace: true });
+      } else {
+        toast({
+          title: 'Błąd',
+          description: 'Administrator już istnieje w systemie.',
+          variant: 'destructive',
+        });
+        setIsAdminSetup(false);
+      }
+    } catch (error: any) {
+      toast({
+        title: 'Błąd',
+        description: error.message,
+        variant: 'destructive',
+      });
+      setIsAdminSetup(false);
+    }
+  };
 
   const handleAcceptInvitation = async () => {
     if (!inviteToken) return;
@@ -73,7 +134,6 @@ const Auth = () => {
     const { success } = await acceptInvitation(inviteToken);
     if (success) {
       await refetchRole();
-      // Clear invite token from URL
       window.history.replaceState({}, '', '/auth');
       setInviteToken(null);
       setInviteValid(false);
@@ -89,7 +149,6 @@ const Auth = () => {
     } else if (role === 'client') {
       navigate('/client', { replace: true });
     } else {
-      // No role assigned - show message
       toast({
         title: 'Brak uprawnień',
         description: 'Twoje konto nie ma przypisanej roli. Skontaktuj się z administratorem.',
@@ -147,19 +206,25 @@ const Auth = () => {
       toast({ title: 'Błąd', description: nameResult.error.errors[0].message, variant: 'destructive' });
       return;
     }
+
+    // If this is admin setup, mark it
+    if (noAdminExists && !inviteValid) {
+      setIsAdminSetup(true);
+    }
     
     setIsLoading(true);
     const { error } = await signUp(signupEmail.trim(), signupPassword, signupName.trim() || undefined);
     setIsLoading(false);
 
     if (error) {
+      setIsAdminSetup(false);
       if (error.message.includes('User already registered')) {
         toast({ title: 'Błąd rejestracji', description: 'Ten email jest już zarejestrowany', variant: 'destructive' });
       } else {
         toast({ title: 'Błąd rejestracji', description: error.message, variant: 'destructive' });
       }
     } else {
-      toast({ title: 'Konto utworzone!', description: 'Możesz się teraz zalogować' });
+      toast({ title: 'Konto utworzone!', description: noAdminExists ? 'Konfigurowanie administratora...' : 'Możesz się teraz zalogować' });
     }
   };
 
@@ -172,7 +237,7 @@ const Auth = () => {
     }
   };
 
-  if (authLoading) {
+  if (authLoading || checkingAdmin) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -193,6 +258,23 @@ const Auth = () => {
           </div>
         </div>
 
+        {/* First Admin Setup Banner */}
+        {noAdminExists && !inviteValid && (
+          <Card className="border-primary/50 bg-primary/10">
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center">
+                <Shield className="h-5 w-5 text-primary" />
+              </div>
+              <div className="flex-1">
+                <p className="font-medium text-foreground">Konfiguracja początkowa</p>
+                <p className="text-sm text-muted-foreground">
+                  Zarejestruj się, aby utworzyć konto <Badge variant="secondary">Administratora</Badge>
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Invitation Banner */}
         {inviteValid && inviteRole && (
           <Card className="border-primary/50 bg-primary/10">
@@ -212,18 +294,22 @@ const Auth = () => {
 
         <Card className="border-border shadow-elegant">
           <CardHeader className="pb-4">
-            <CardTitle className="text-center text-lg">Witaj!</CardTitle>
+            <CardTitle className="text-center text-lg">
+              {noAdminExists && !inviteValid ? 'Konfiguracja systemu' : 'Witaj!'}
+            </CardTitle>
             <CardDescription className="text-center">
-              {inviteValid 
-                ? 'Utwórz konto, aby zaakceptować zaproszenie'
-                : 'Zaloguj się lub utwórz nowe konto'
+              {noAdminExists && !inviteValid
+                ? 'Utwórz pierwsze konto administratora'
+                : inviteValid 
+                  ? 'Utwórz konto, aby zaakceptować zaproszenie'
+                  : 'Zaloguj się lub utwórz nowe konto'
               }
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue={defaultTab} key={defaultTab} className="w-full">
+            <Tabs defaultValue={defaultTab} key={`${defaultTab}-${noAdminExists}`} className="w-full">
               <TabsList className="grid w-full grid-cols-2 mb-6">
-                <TabsTrigger value="login">Logowanie</TabsTrigger>
+                <TabsTrigger value="login" disabled={noAdminExists && !inviteValid}>Logowanie</TabsTrigger>
                 <TabsTrigger value="signup">Rejestracja</TabsTrigger>
               </TabsList>
               
@@ -307,10 +393,10 @@ const Auth = () => {
                     {isLoading ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Tworzenie konta...
+                        {noAdminExists ? 'Tworzenie administratora...' : 'Tworzenie konta...'}
                       </>
                     ) : (
-                      'Utwórz konto'
+                      noAdminExists && !inviteValid ? 'Utwórz konto administratora' : 'Utwórz konto'
                     )}
                   </Button>
                 </form>
