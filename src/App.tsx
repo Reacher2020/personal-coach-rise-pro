@@ -18,6 +18,7 @@ import Settings from "./pages/Settings";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminUsers from "./pages/admin/AdminUsers";
 import ClientDashboard from "./pages/client/ClientDashboard";
 
 const queryClient = new QueryClient();
@@ -38,6 +39,13 @@ const App = () => (
                 <ProtectedRoute>
                   <RoleBasedRoute allowedRoles={['admin']}>
                     <AdminDashboard />
+                  </RoleBasedRoute>
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/users" element={
+                <ProtectedRoute>
+                  <RoleBasedRoute allowedRoles={['admin']}>
+                    <AdminUsers />
                   </RoleBasedRoute>
                 </ProtectedRoute>
               } />
