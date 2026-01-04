@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
+import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,8 +10,7 @@ import {
   TrendingUp, 
   MessageSquare,
   Clock,
-  User,
-  LogOut
+  User
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
@@ -32,7 +30,7 @@ interface Profile {
 }
 
 const ClientDashboard = () => {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [upcomingSessions, setUpcomingSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
@@ -66,35 +64,10 @@ const ClientDashboard = () => {
     fetchData();
   }, [user]);
 
-  const initials = (name: string | null) => {
-    if (!name) return user?.email?.[0]?.toUpperCase() || '?';
-    return name.split(' ').map(w => w[0]).join('').toUpperCase();
-  };
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="h-16 border-b border-border bg-card px-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-            <Dumbbell className="h-5 w-5 text-primary-foreground" />
-          </div>
-          <span className="font-bold text-lg">FitCoach</span>
-        </div>
-        <div className="flex items-center gap-4">
-          <Avatar>
-            <AvatarFallback className="bg-primary/20 text-primary">
-              {initials(profile?.full_name)}
-            </AvatarFallback>
-          </Avatar>
-          <Button variant="ghost" size="icon" onClick={signOut}>
-            <LogOut className="h-5 w-5" />
-          </Button>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="p-4 lg:p-6 space-y-6 max-w-4xl mx-auto">
+    <DashboardLayout>
+      <div className="space-y-6 max-w-4xl mx-auto">
         {/* Welcome */}
         <div>
           <h1 className="text-2xl lg:text-3xl font-bold text-foreground">
@@ -217,8 +190,8 @@ const ClientDashboard = () => {
             </CardContent>
           </Card>
         </div>
-      </main>
-    </div>
+      </div>
+    </DashboardLayout>
   );
 };
 
