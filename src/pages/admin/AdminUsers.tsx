@@ -5,14 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import {
   Table,
   TableBody,
   TableCell,
@@ -30,6 +22,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -44,6 +43,9 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
+import type { Database } from '@/integrations/supabase/types';
+
+type AppRole = Database['public']['Enums']['app_role'];
 
 interface UserWithRole {
   user_id: string;
@@ -61,6 +63,7 @@ const AdminUsers = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<UserWithRole | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [changingRole, setChangingRole] = useState<string | null>(null);
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -161,6 +164,43 @@ const AdminUsers = () => {
       });
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const handleRoleChange = async (userId: string, newRole: AppRole) => {
+    setChangingRole(userId);
+    
+    try {
+      // Delete old role
+      const { error: deleteError } = await supabase
+        .from('user_roles')
+        .delete()
+        .eq('user_id', userId);
+
+      if (deleteError) throw deleteError;
+
+      // Insert new role
+      const { error: insertError } = await supabase
+        .from('user_roles')
+        .insert({ user_id: userId, role: newRole });
+
+      if (insertError) throw insertError;
+
+      toast({
+        title: 'Rola zmieniona',
+        description: `Rola użytkownika została zmieniona na ${newRole === 'admin' ? 'Admin' : newRole === 'coach' ? 'Trener' : 'Klient'}`,
+      });
+
+      fetchUsers();
+    } catch (error: any) {
+      console.error('Error changing role:', error);
+      toast({
+        title: 'Błąd',
+        description: error.message || 'Nie udało się zmienić roli',
+        variant: 'destructive',
+      });
+    } finally {
+      setChangingRole(null);
     }
   };
 
@@ -303,7 +343,45 @@ const AdminUsers = () => {
                         </div>
                       </TableCell>
                       <TableCell>{user.email || '-'}</TableCell>
-                      <TableCell>{getRoleBadge(user.role)}</TableCell>
+                      <TableCell>
+                        {user.user_id === currentUser?.id ? (
+                          getRoleBadge(user.role)
+                        ) : (
+                          <Select
+                            value={user.role}
+                            onValueChange={(value: AppRole) => handleRoleChange(user.user_id, value)}
+                            disabled={changingRole === user.user_id}
+                          >
+                            <SelectTrigger className="w-[140px]">
+                              {changingRole === user.user_id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <SelectValue />
+                              )}
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="admin">
+                                <div className="flex items-center gap-2">
+                                  <Shield className="h-3 w-3 text-red-400" />
+                                  Admin
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="coach">
+                                <div className="flex items-center gap-2">
+                                  <UserCog className="h-3 w-3 text-primary" />
+                                  Trener
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="client">
+                                <div className="flex items-center gap-2">
+                                  <User className="h-3 w-3" />
+                                  Klient
+                                </div>
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        )}
+                      </TableCell>
                       <TableCell>
                         {format(new Date(user.created_at), 'dd MMM yyyy', { locale: pl })}
                       </TableCell>
