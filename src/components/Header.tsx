@@ -1,8 +1,7 @@
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Menu, X, User, Bell, Settings, LogOut } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserRole } from "@/hooks/useUserRole";
 import { useNavigate } from "react-router-dom";
 import {
   DropdownMenu,
@@ -11,6 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ClientNotifications } from "./ClientNotifications";
 
 interface HeaderProps {
   onMenuToggle: () => void;
@@ -19,11 +19,17 @@ interface HeaderProps {
 
 export const Header = ({ onMenuToggle, isSidebarOpen }: HeaderProps) => {
   const { user, signOut } = useAuth();
+  const { isClient } = useUserRole();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
     await signOut();
     navigate('/auth');
+  };
+
+  const getSettingsPath = () => {
+    if (isClient) return '/client/profile';
+    return '/settings';
   };
 
   return (
@@ -49,14 +55,15 @@ export const Header = ({ onMenuToggle, isSidebarOpen }: HeaderProps) => {
       </div>
 
       <div className="flex items-center gap-2">
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5" />
-          <span className="absolute -top-1 -right-1 w-3 h-3 bg-destructive rounded-full text-xs flex items-center justify-center text-destructive-foreground">
-            3
-          </span>
-        </Button>
+        {isClient ? (
+          <ClientNotifications />
+        ) : (
+          <Button variant="ghost" size="icon" className="relative">
+            <Bell className="h-5 w-5" />
+          </Button>
+        )}
         
-        <Button variant="ghost" size="icon" onClick={() => navigate('/settings')}>
+        <Button variant="ghost" size="icon" onClick={() => navigate(getSettingsPath())}>
           <Settings className="h-5 w-5" />
         </Button>
         
@@ -71,7 +78,7 @@ export const Header = ({ onMenuToggle, isSidebarOpen }: HeaderProps) => {
               <p className="text-sm font-medium truncate">{user?.email}</p>
             </div>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => navigate('/settings')}>
+            <DropdownMenuItem onClick={() => navigate(getSettingsPath())}>
               <Settings className="mr-2 h-4 w-4" />
               Ustawienia
             </DropdownMenuItem>
