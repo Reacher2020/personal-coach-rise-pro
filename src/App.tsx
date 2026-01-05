@@ -20,6 +20,11 @@ import NotFound from "./pages/NotFound";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminUsers from "./pages/admin/AdminUsers";
 import ClientDashboard from "./pages/client/ClientDashboard";
+import ClientSessions from "./pages/client/ClientSessions";
+import ClientWorkouts from "./pages/client/ClientWorkouts";
+import ClientProgress from "./pages/client/ClientProgress";
+import ClientMessages from "./pages/client/ClientMessages";
+import ClientProfile from "./pages/client/ClientProfile";
 
 const queryClient = new QueryClient();
 
@@ -55,6 +60,41 @@ const App = () => (
                 <ProtectedRoute>
                   <RoleBasedRoute allowedRoles={['client']}>
                     <ClientDashboard />
+                  </RoleBasedRoute>
+                </ProtectedRoute>
+              } />
+              <Route path="/client/sessions" element={
+                <ProtectedRoute>
+                  <RoleBasedRoute allowedRoles={['client']}>
+                    <ClientSessions />
+                  </RoleBasedRoute>
+                </ProtectedRoute>
+              } />
+              <Route path="/client/workouts" element={
+                <ProtectedRoute>
+                  <RoleBasedRoute allowedRoles={['client']}>
+                    <ClientWorkouts />
+                  </RoleBasedRoute>
+                </ProtectedRoute>
+              } />
+              <Route path="/client/progress" element={
+                <ProtectedRoute>
+                  <RoleBasedRoute allowedRoles={['client']}>
+                    <ClientProgress />
+                  </RoleBasedRoute>
+                </ProtectedRoute>
+              } />
+              <Route path="/client/messages" element={
+                <ProtectedRoute>
+                  <RoleBasedRoute allowedRoles={['client']}>
+                    <ClientMessages />
+                  </RoleBasedRoute>
+                </ProtectedRoute>
+              } />
+              <Route path="/client/profile" element={
+                <ProtectedRoute>
+                  <RoleBasedRoute allowedRoles={['client']}>
+                    <ClientProfile />
                   </RoleBasedRoute>
                 </ProtectedRoute>
               } />
