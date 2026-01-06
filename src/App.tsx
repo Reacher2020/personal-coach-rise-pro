@@ -19,6 +19,7 @@ import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminUsers from "./pages/admin/AdminUsers";
+import AdminSettings from "./pages/admin/AdminSettings";
 import ClientDashboard from "./pages/client/ClientDashboard";
 import ClientSessions from "./pages/client/ClientSessions";
 import ClientWorkouts from "./pages/client/ClientWorkouts";
@@ -51,6 +52,13 @@ const App = () => (
                 <ProtectedRoute>
                   <RoleBasedRoute allowedRoles={['admin']}>
                     <AdminUsers />
+                  </RoleBasedRoute>
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/settings" element={
+                <ProtectedRoute>
+                  <RoleBasedRoute allowedRoles={['admin']}>
+                    <AdminSettings />
                   </RoleBasedRoute>
                 </ProtectedRoute>
               } />
