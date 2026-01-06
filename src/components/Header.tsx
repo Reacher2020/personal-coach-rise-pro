@@ -19,7 +19,7 @@ interface HeaderProps {
 
 export const Header = ({ onMenuToggle, isSidebarOpen }: HeaderProps) => {
   const { user, signOut } = useAuth();
-  const { isClient } = useUserRole();
+  const { isClient, isAdmin } = useUserRole();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -28,6 +28,7 @@ export const Header = ({ onMenuToggle, isSidebarOpen }: HeaderProps) => {
   };
 
   const getSettingsPath = () => {
+    if (isAdmin) return '/admin/settings';
     if (isClient) return '/client/profile';
     return '/settings';
   };
