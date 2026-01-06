@@ -20,8 +20,7 @@ import {
 } from '@/components/ui/table';
 import { Users, UserPlus, Shield, Mail, Clock, CheckCircle2, XCircle, Trash2, Copy } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useInvitations } from '@/hooks/useInvitations';
-import { Invitation } from '@/types/invitation';
+import { useInvitations, InvitationRole } from '@/hooks/useInvitations';
 import { format } from 'date-fns';
 import { pl } from 'date-fns/locale';
 
@@ -36,7 +35,7 @@ const AdminDashboard = () => {
   } = useInvitations();
 
   const [email, setEmail] = useState('');
-  const [role, setRole] = useState<'coach' | 'admin'>('coach');
+  const [role, setRole] = useState<InvitationRole>('coach');
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -62,7 +61,7 @@ const AdminDashboard = () => {
     return <Badge className="bg-red-500/20 text-red-400"><XCircle className="h-3 w-3 mr-1" />Wygasło</Badge>;
   };
 
-  const renderTable = (data: Invitation[]) => (
+  const renderTable = (data: typeof invitations) => (
     <Table>
       <TableHeader>
         <TableRow>
