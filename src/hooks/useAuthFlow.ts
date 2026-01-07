@@ -17,7 +17,7 @@ export const useAuthFlow = () => {
   const [noAdminExists, setNoAdminExists] = useState(false);
   const [authFlow, setAuthFlow] = useState<'login' | 'invite' | 'setup-admin'>('login');
 
-  // 🔹 Pobieranie roli użytkownika i przekierowanie
+  // 🔹 Pewny redirect po roli
   const redirectByRole = async (userId: string) => {
     try {
       const { data: roleData } = await supabase
@@ -43,12 +43,15 @@ export const useAuthFlow = () => {
   useEffect(() => {
     const init = async () => {
       try {
+        // Sprawdzenie czy istnieje admin
         const { data: adminExists } = await supabase.rpc('admin_exists');
         if (!adminExists) setNoAdminExists(true);
 
+        // Sprawdzenie tokenu zaproszenia
         const token = searchParams.get('invite');
         if (token) setInviteToken(token);
 
+        // Ustalenie flow
         if (!adminExists && !token) setAuthFlow('setup-admin');
         else if (token) setAuthFlow('invite');
         else setAuthFlow('login');
@@ -66,17 +69,26 @@ export const useAuthFlow = () => {
 
     const emailValidation = emailSchema.safeParse(email);
     const passwordValidation = passwordSchema.safeParse(password);
+    if (!emailValidation.success)
+      return toast({ title: 'Błąd', description: emailValidation.error.errors[0].message, variant: 'destructive' });
+    if (!passwordValidation.success)
+      return toast({ title: 'Błąd', description: passwordValidation.error.errors[0].message, variant: 'destructive' });
 
-    if (!emailValidation.success) return toast({ title: 'Błąd', description: emailValidation.error.errors[0].message, variant: 'destructive' });
-    if (!passwordValidation.success) return toast({ title: 'Błąd', description: passwordValidation.error.errors[0].message, variant: 'destructive' });
-
+    setLoading(true);
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+      const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
       if (error) throw error;
 
-      if (data.user?.id) await redirectByRole(data.user.id);
+      // 🔹 Pobranie pełnej sesji
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = sessionData.session?.user?.id;
+      if (!userId) throw new Error('Nie udało się pobrać użytkownika');
+
+      await redirectByRole(userId);
     } catch (e: any) {
       toast({ title: 'Błąd logowania', description: e.message, variant: 'destructive' });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -85,21 +97,30 @@ export const useAuthFlow = () => {
 
     const emailValidation = emailSchema.safeParse(email);
     const passwordValidation = passwordSchema.safeParse(password);
+    if (!emailValidation.success)
+      return toast({ title: 'Błąd', description: emailValidation.error.errors[0].message, variant: 'destructive' });
+    if (!passwordValidation.success)
+      return toast({ title: 'Błąd', description: passwordValidation.error.errors[0].message, variant: 'destructive' });
 
-    if (!emailValidation.success) return toast({ title: 'Błąd', description: emailValidation.error.errors[0].message, variant: 'destructive' });
-    if (!passwordValidation.success) return toast({ title: 'Błąd', description: passwordValidation.error.errors[0].message, variant: 'destructive' });
-
+    setLoading(true);
     try {
-      const { data, error } = await supabase.auth.signUp({
+      const { error } = await supabase.auth.signUp({
         email: email.trim(),
         password,
         options: { data: { full_name: name } },
       });
       if (error) throw error;
 
-      if (data.user?.id) await redirectByRole(data.user.id);
+      // 🔹 Pobranie pełnej sesji
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = sessionData.session?.user?.id;
+      if (!userId) throw new Error('Nie udało się pobrać użytkownika');
+
+      await redirectByRole(userId);
     } catch (e: any) {
       toast({ title: 'Błąd rejestracji', description: e.message || 'Nie udało się utworzyć konta', variant: 'destructive' });
+    } finally {
+      setLoading(false);
     }
   };
 
