@@ -1,12 +1,10 @@
-// src/routes/AppRoutes.tsx
-
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from '@/auth/AuthContext'
 import { AuthGuard } from '@/auth/AuthGuard'
 
-import AuthPage from '@/auth/Auth'
-import AdminPage from '@/pages/Admin'
+import AuthPage from '@/pages/Auth'
 import AppPage from '@/pages/App'
+import AdminPage from '@/pages/Admin'
 
 export default function AppRoutes() {
   return (

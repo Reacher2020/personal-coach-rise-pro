@@ -1,5 +1,3 @@
-// src/pages/Auth.tsx
-
 import { useState } from 'react'
 import { useAuth } from '@/auth/AuthContext'
 
@@ -47,7 +45,7 @@ export default function AuthPage() {
 
         {error && <p className="text-red-500 text-sm">{error}</p>}
 
-        <button disabled={loading} type="submit">
+        <button type="submit" disabled={loading}>
           {loading ? 'Logowanie…' : 'Zaloguj się'}
         </button>
       </form>

@@ -1,5 +1,3 @@
-// src/auth/AuthContext.tsx
-
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { login, fetchMe, logout } from './auth.api'
@@ -24,7 +22,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [authResolved, setAuthResolved] = useState(false)
   const navigate = useNavigate()
 
-  // 🔒 INIT AUTH – ZERO FLICKER
+  // INIT AUTH (zero flicker)
   useEffect(() => {
     let mounted = true
 
@@ -44,26 +42,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   async function loginUser(email: string, password: string) {
     await login(email, password)
 
-    // 🔥 KLUCZ: wymuszone pobranie usera PO sesji
     const me = await fetchMe()
     if (!me) throw new Error('Auth not established')
 
     setUser(me)
-    navigateAfterAuth(me)
+
+    if (me.role === 'ADMIN') {
+      navigate('/admin', { replace: true })
+    } else {
+      navigate('/', { replace: true })
+    }
   }
 
   async function logoutUser() {
     await logout()
     setUser(null)
     navigate('/auth', { replace: true })
-  }
-
-  function navigateAfterAuth(user: User) {
-    if (user.role === 'ADMIN') {
-      navigate('/admin', { replace: true })
-    } else {
-      navigate('/', { replace: true })
-    }
   }
 
   return (
