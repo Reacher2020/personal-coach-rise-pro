@@ -1,88 +1,56 @@
-import { useEffect, useState } from 'react';
-import { useAuthFlow } from '@/hooks/useAuthFlow';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Loader2, Dumbbell, UserPlus, Shield } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+// src/pages/Auth.tsx
 
-const Auth = () => {
-  const { authFlow, loading, handleLogin, handleSignup, inviteEmail } = useAuthFlow();
+import { useState } from 'react'
+import { useAuth } from '@/auth/AuthContext'
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
+export default function AuthPage() {
+  const { loginUser } = useAuth()
 
-  useEffect(() => {
-    if (authFlow === 'invite' && inviteEmail) {
-      setEmail(inviteEmail);
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault()
+    setError(null)
+    setLoading(true)
+
+    try {
+      await loginUser(email, password)
+    } catch {
+      setError('Nieprawidłowy email lub hasło')
+      setLoading(false)
     }
-  }, [authFlow, inviteEmail]);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-10 w-10 animate-spin text-primary" />
-      </div>
-    );
   }
 
-  const isSignup = authFlow !== 'login';
-
-  const icon =
-    authFlow === 'setup-admin' ? <Shield className="text-white" /> :
-    authFlow === 'invite' ? <UserPlus className="text-white" /> :
-    <Dumbbell className="text-white" />;
-
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="mx-auto mb-4 h-14 w-14 rounded-xl bg-primary flex items-center justify-center">
-            {icon}
-          </div>
+    <div className="min-h-screen flex items-center justify-center">
+      <form onSubmit={submit} className="w-80 space-y-4">
+        <h1 className="text-xl font-semibold text-center">Logowanie</h1>
 
-          <CardTitle>{isSignup ? 'Rejestracja' : 'Logowanie'}</CardTitle>
+        <input
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={e => setEmail(e.target.value)}
+          required
+        />
 
-          {authFlow === 'setup-admin' && <Badge variant="destructive">Pierwszy Admin</Badge>}
-          {authFlow === 'invite' && <Badge variant="secondary">Zaproszenie</Badge>}
+        <input
+          type="password"
+          placeholder="Hasło"
+          value={password}
+          onChange={e => setPassword(e.target.value)}
+          required
+        />
 
-          <CardDescription>
-            {isSignup ? 'Utwórz konto, aby kontynuować' : 'Zaloguj się'}
-          </CardDescription>
-        </CardHeader>
+        {error && <p className="text-red-500 text-sm">{error}</p>}
 
-        <CardContent>
-          {isSignup ? (
-            <form
-              className="space-y-4"
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleSignup(email, password, name);
-              }}
-            >
-              <Input placeholder="Imię i nazwisko" value={name} onChange={(e) => setName(e.target.value)} />
-              <Input value={email} disabled={authFlow === 'invite'} />
-              <Input type="password" placeholder="Hasło" value={password} onChange={(e) => setPassword(e.target.value)} />
-              <Button className="w-full">Utwórz konto</Button>
-            </form>
-          ) : (
-            <form
-              className="space-y-4"
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleLogin(email, password);
-              }}
-            >
-              <Input placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
-              <Input type="password" placeholder="Hasło" value={password} onChange={(e) => setPassword(e.target.value)} />
-              <Button className="w-full">Zaloguj</Button>
-            </form>
-          )}
-        </CardContent>
-      </Card>
+        <button disabled={loading} type="submit">
+          {loading ? 'Logowanie…' : 'Zaloguj się'}
+        </button>
+      </form>
     </div>
-  );
-};
-
-export default Auth;
+  )
+}

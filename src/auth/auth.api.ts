@@ -1,30 +1,32 @@
+// src/auth/auth.api.ts
+
 export async function login(email: string, password: string) {
   const res = await fetch('/api/auth/login', {
     method: 'POST',
+    credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password }),
   })
 
-  if (!res.ok) throw new Error('Login failed')
-  return res.json()
-}
+  if (!res.ok) {
+    throw new Error('Invalid credentials')
+  }
 
-export async function registerFromInvite(
-  token: string,
-  password: string
-) {
-  const res = await fetch('/api/auth/register-invite', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ token, password }),
-  })
-
-  if (!res.ok) throw new Error('Invite registration failed')
-  return res.json() // { user }
+  return true
 }
 
 export async function fetchMe() {
-  const res = await fetch('/api/auth/me')
+  const res = await fetch('/api/auth/me', {
+    credentials: 'include',
+  })
+
   if (!res.ok) return null
   return res.json()
+}
+
+export async function logout() {
+  await fetch('/api/auth/logout', {
+    method: 'POST',
+    credentials: 'include',
+  })
 }

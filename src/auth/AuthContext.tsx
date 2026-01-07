@@ -1,12 +1,8 @@
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-} from 'react'
+// src/auth/AuthContext.tsx
+
+import React, { createContext, useContext, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { fetchMe, login, registerFromInvite } from './auth.api'
-import { navigateAfterAuth } from './navigateAfterAuth'
+import { login, fetchMe, logout } from './auth.api'
 
 type User = {
   id: string
@@ -18,7 +14,7 @@ type AuthContextType = {
   user: User | null
   authResolved: boolean
   loginUser: (email: string, password: string) => Promise<void>
-  registerInvite: (token: string, password: string) => Promise<void>
+  logoutUser: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType>(null as any)
@@ -28,31 +24,62 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [authResolved, setAuthResolved] = useState(false)
   const navigate = useNavigate()
 
+  // 🔒 INIT AUTH – ZERO FLICKER
   useEffect(() => {
+    let mounted = true
+
     fetchMe()
-      .then(setUser)
-      .finally(() => setAuthResolved(true))
+      .then(me => {
+        if (mounted) setUser(me)
+      })
+      .finally(() => {
+        if (mounted) setAuthResolved(true)
+      })
+
+    return () => {
+      mounted = false
+    }
   }, [])
 
   async function loginUser(email: string, password: string) {
-    const data = await login(email, password)
-    setUser(data.user)
-    navigateAfterAuth(data.user, navigate)
+    await login(email, password)
+
+    // 🔥 KLUCZ: wymuszone pobranie usera PO sesji
+    const me = await fetchMe()
+    if (!me) throw new Error('Auth not established')
+
+    setUser(me)
+    navigateAfterAuth(me)
   }
 
-  async function registerInvite(token: string, password: string) {
-    const data = await registerFromInvite(token, password)
-    setUser(data.user)
-    navigateAfterAuth(data.user, navigate)
+  async function logoutUser() {
+    await logout()
+    setUser(null)
+    navigate('/auth', { replace: true })
+  }
+
+  function navigateAfterAuth(user: User) {
+    if (user.role === 'ADMIN') {
+      navigate('/admin', { replace: true })
+    } else {
+      navigate('/', { replace: true })
+    }
   }
 
   return (
     <AuthContext.Provider
-      value={{ user, authResolved, loginUser, registerInvite }}
+      value={{
+        user,
+        authResolved,
+        loginUser,
+        logoutUser,
+      }}
     >
       {children}
     </AuthContext.Provider>
   )
 }
 
-export const useAuth = () => useContext(AuthContext)
+export function useAuth() {
+  return useContext(AuthContext)
+}
