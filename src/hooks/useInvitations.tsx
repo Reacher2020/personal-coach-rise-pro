@@ -2,18 +2,14 @@ import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useToast } from './use-toast';
+import type { Database } from '@/integrations/supabase/types';
 
-export type InvitationRole = 'coach' | 'client';
+export type InvitationRole = 'coach' | 'client' | 'admin';
 
-interface Invitation {
-  id: string;
-  email: string;
+type DbInvitation = Database['public']['Tables']['invitations']['Row'];
+
+interface Invitation extends Omit<DbInvitation, 'role'> {
   role: InvitationRole;
-  status: string;
-  token: string;
-  expires_at: string;
-  created_at: string;
-  accepted_at: string | null;
 }
 
 export const useInvitations = () => {
@@ -21,8 +17,8 @@ export const useInvitations = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
 
-  const createInvitation = async (email: string, role: InvitationRole) => {
-    if (!user) return { error: new Error('Not authenticated') };
+  const createInvitation = async (email: string, role: InvitationRole): Promise<{ data: Invitation | null; error: Error | null }> => {
+    if (!user) return { data: null, error: new Error('Not authenticated') };
     
     setLoading(true);
     try {
@@ -43,7 +39,7 @@ export const useInvitations = () => {
         description: `Zaproszenie zostało utworzone dla ${email}`,
       });
 
-      return { data, error: null };
+      return { data: data as Invitation, error: null };
     } catch (error: any) {
       toast({
         title: 'Błąd',
@@ -56,7 +52,7 @@ export const useInvitations = () => {
     }
   };
 
-  const getMyInvitations = async () => {
+  const getMyInvitations = async (): Promise<{ data: Invitation[] | null; error: Error | null }> => {
     if (!user) return { data: null, error: new Error('Not authenticated') };
 
     const { data, error } = await supabase
@@ -65,16 +61,16 @@ export const useInvitations = () => {
       .eq('invited_by', user.id)
       .order('created_at', { ascending: false });
 
-    return { data: data as Invitation[] | null, error };
+    return { data: data as Invitation[] | null, error: error as Error | null };
   };
 
-  const getAllInvitations = async () => {
+  const getAllInvitations = async (): Promise<{ data: Invitation[] | null; error: Error | null }> => {
     const { data, error } = await supabase
       .from('invitations')
       .select('*')
       .order('created_at', { ascending: false });
 
-    return { data: data as Invitation[] | null, error };
+    return { data: data as Invitation[] | null, error: error as Error | null };
   };
 
   const acceptInvitation = async (token: string) => {
@@ -106,7 +102,7 @@ export const useInvitations = () => {
     }
   };
 
-  const getInvitationByToken = async (token: string) => {
+  const getInvitationByToken = async (token: string): Promise<{ data: Invitation | null; error: Error | null }> => {
     const { data, error } = await supabase
       .from('invitations')
       .select('*')
@@ -115,10 +111,10 @@ export const useInvitations = () => {
       .gt('expires_at', new Date().toISOString())
       .maybeSingle();
 
-    return { data: data as Invitation | null, error };
+    return { data: data as Invitation | null, error: error as Error | null };
   };
 
-  const deleteInvitation = async (id: string) => {
+  const deleteInvitation = async (id: string): Promise<{ error: Error | null }> => {
     setLoading(true);
     try {
       const { error } = await supabase
