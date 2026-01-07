@@ -1,58 +1,61 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuthFlow } from '@/hooks/useAuthFlow';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { Loader2, Dumbbell, UserPlus, Shield } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 const Auth = () => {
-  const { authFlow, handleLogin, handleSignup, loading, inviteToken } = useAuthFlow();
+  const {
+    authFlow,
+    loading,
+    handleLogin,
+    handleSignup,
+    inviteEmail,
+  } = useAuthFlow();
 
-  const [loginEmail, setLoginEmail] = useState('');
-  const [loginPassword, setLoginPassword] = useState('');
-  const [signupEmail, setSignupEmail] = useState('');
-  const [signupPassword, setSignupPassword] = useState('');
-  const [signupName, setSignupName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
 
   useEffect(() => {
-    if (authFlow === 'invite' && inviteToken) setSignupEmail(inviteToken);
-  }, [authFlow, inviteToken]);
+    if (authFlow === 'invite' && inviteEmail) {
+      setEmail(inviteEmail); // ✅ POPRAWNE ŹRÓDŁO EMAILA
+    }
+  }, [authFlow, inviteEmail]);
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="animate-spin h-10 w-10 text-primary" />
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
       </div>
     );
   }
 
-  const isSignup = authFlow === 'invite' || authFlow === 'setup-admin';
-  const title = isSignup ? 'Rejestracja' : 'Logowanie';
-  const description = isSignup ? 'Utwórz konto, aby kontynuować' : 'Zaloguj się';
+  const isSignup = authFlow !== 'login';
 
-  const getBadge = () => {
-    if (authFlow === 'setup-admin') return <Badge variant="destructive">Pierwszy Admin</Badge>;
-    if (authFlow === 'invite') return <Badge variant="secondary">Zaproszenie</Badge>;
-    return null; // brak badge dla zwykłego logowania
-  };
-
-  const getIcon = () => {
-    if (authFlow === 'setup-admin') return <Shield className="text-white h-6 w-6" />;
-    if (authFlow === 'invite') return <UserPlus className="text-white h-6 w-6" />;
-    return <Dumbbell className="text-white h-6 w-6" />;
-  };
+  const icon =
+    authFlow === 'setup-admin' ? <Shield className="text-white" /> :
+    authFlow === 'invite' ? <UserPlus className="text-white" /> :
+    <Dumbbell className="text-white" />;
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
-      <Card className="w-full max-w-md shadow-xl">
+      <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 h-14 w-14 rounded-xl bg-primary flex items-center justify-center">
-            {getIcon()}
+            {icon}
           </div>
-          <CardTitle>{title}</CardTitle>
-          {getBadge() && <div className="flex justify-center my-2">{getBadge()}</div>}
-          <CardDescription>{description}</CardDescription>
+
+          <CardTitle>{isSignup ? 'Rejestracja' : 'Logowanie'}</CardTitle>
+
+          {authFlow === 'setup-admin' && <Badge variant="destructive">Pierwszy Admin</Badge>}
+          {authFlow === 'invite' && <Badge variant="secondary">Zaproszenie</Badge>}
+
+          <CardDescription>
+            {isSignup ? 'Utwórz konto, aby kontynuować' : 'Zaloguj się'}
+          </CardDescription>
         </CardHeader>
 
         <CardContent>
@@ -61,22 +64,12 @@ const Auth = () => {
               className="space-y-4"
               onSubmit={(e) => {
                 e.preventDefault();
-                handleSignup(signupEmail, signupPassword, signupName);
+                handleSignup(email, password, name);
               }}
             >
-              <Input placeholder="Imię i nazwisko" value={signupName} onChange={(e) => setSignupName(e.target.value)} />
-              <Input
-                placeholder="Email"
-                value={signupEmail}
-                disabled={!!inviteToken}
-                onChange={(e) => setSignupEmail(e.target.value)}
-              />
-              <Input
-                type="password"
-                placeholder="Hasło"
-                value={signupPassword}
-                onChange={(e) => setSignupPassword(e.target.value)}
-              />
+              <Input placeholder="Imię i nazwisko" value={name} onChange={(e) => setName(e.target.value)} />
+              <Input value={email} disabled={authFlow === 'invite'} />
+              <Input type="password" placeholder="Hasło" value={password} onChange={(e) => setPassword(e.target.value)} />
               <Button className="w-full">Utwórz konto</Button>
             </form>
           ) : (
@@ -84,16 +77,11 @@ const Auth = () => {
               className="space-y-4"
               onSubmit={(e) => {
                 e.preventDefault();
-                handleLogin(loginEmail, loginPassword);
+                handleLogin(email, password);
               }}
             >
-              <Input placeholder="Email" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} />
-              <Input
-                type="password"
-                placeholder="Hasło"
-                value={loginPassword}
-                onChange={(e) => setLoginPassword(e.target.value)}
-              />
+              <Input placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
+              <Input type="password" placeholder="Hasło" value={password} onChange={(e) => setPassword(e.target.value)} />
               <Button className="w-full">Zaloguj</Button>
             </form>
           )}
