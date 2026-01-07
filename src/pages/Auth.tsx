@@ -1,37 +1,44 @@
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { z } from 'zod';
+
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useInvitations } from '@/hooks/useInvitations';
+import { useToast } from '@/hooks/use-toast';
+
+import { supabase } from '@/integrations/supabase/client';
+
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from '@/components/ui/card';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
-import { Dumbbell, Loader2, UserPlus, Shield } from 'lucide-react';
-import { z } from 'zod';
 
-/* -------------------- validation -------------------- */
-const emailSchema = z.string().trim().email('Nieprawidłowy email').max(255);
-const passwordSchema = z.string().min(6, 'Min. 6 znaków').max(72);
+import { Dumbbell, Loader2 } from 'lucide-react';
 
-/* ==================================================== */
-/* ==================== COMPONENT ===================== */
-/* ==================================================== */
+/* ================= VALIDATION ================= */
+
+const emailSchema = z.string().trim().email().max(255);
+const passwordSchema = z.string().min(6).max(72);
+
+/* ================= TYPES ================= */
+
+type AuthFlow =
+  | 'login'
+  | 'signup'
+  | 'invite'
+  | 'setup-admin'
+  | 'redirect';
+
+/* ================= COMPONENT ================= */
+
 const Auth = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -41,9 +48,10 @@ const Auth = () => {
   const { role, loading: roleLoading, refetchRole } = useUserRole();
   const { getInvitationByToken, acceptInvitation } = useInvitations();
 
-  /* -------------------- state -------------------- */
+  /* ================= UI STATE ================= */
+
   const [tab, setTab] = useState<'login' | 'signup'>('login');
-  const [isLoading, setIsLoading] = useState(false);
+  const [busy, setBusy] = useState(false);
 
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
@@ -52,195 +60,152 @@ const Auth = () => {
   const [signupPassword, setSignupPassword] = useState('');
   const [signupName, setSignupName] = useState('');
 
-  const [inviteToken, setInviteToken] = useState<string | null>(null);
-  const [inviteRole, setInviteRole] = useState<string | null>(null);
-  const [inviteValid, setInviteValid] = useState(false);
+  /* ================= SYSTEM STATE ================= */
 
   const [noAdminExists, setNoAdminExists] = useState(false);
   const [checkingAdmin, setCheckingAdmin] = useState(true);
-  const [isAdminSetup, setIsAdminSetup] = useState(false);
 
-  /**
-   * 🔒 2-etapowy guard:
-   * idle -> waiting_for_role
-   */
-  const postAuthStage = useRef<'idle' | 'waiting_for_role'>('idle');
+  const inviteToken = searchParams.get('invite');
 
-  /* -------------------- admin exists -------------------- */
+  /* ================= ADMIN CHECK ================= */
+
   useEffect(() => {
-    const checkAdmin = async () => {
-      try {
-        const { data } = await supabase.rpc('admin_exists');
+    supabase
+      .rpc('admin_exists')
+      .then(({ data }) => {
         if (data === false) {
           setNoAdminExists(true);
           setTab('signup');
         }
-      } catch {
-        // brak RPC w dev – ignorujemy
-      } finally {
-        setCheckingAdmin(false);
-      }
-    };
-    checkAdmin();
+      })
+      .finally(() => setCheckingAdmin(false));
   }, []);
 
-  /* -------------------- invitation -------------------- */
+  /* ================= INVITE PREFILL ================= */
+
   useEffect(() => {
-    const token = searchParams.get('invite');
-    if (!token) return;
+    if (!inviteToken) return;
 
-    const run = async () => {
-      try {
-        const { data } = await getInvitationByToken(token);
+    getInvitationByToken(inviteToken)
+      .then(({ data }) => {
         if (!data) return;
-
-        setInviteToken(token);
-        setInviteRole(data.role);
-        setInviteValid(true);
         setSignupEmail(data.email);
         setTab('signup');
-      } catch {
+      })
+      .catch(() =>
         toast({
           title: 'Błąd zaproszenia',
-          description: 'Nie udało się zweryfikować zaproszenia',
+          description: 'Token jest nieprawidłowy lub wygasł',
           variant: 'destructive',
-        });
+        })
+      );
+  }, [inviteToken]);
+
+  /* ================= AUTH FLOW RESOLUTION ================= */
+
+  const authFlow: AuthFlow = useMemo(() => {
+    if (user && role) return 'redirect';
+    if (user && inviteToken) return 'invite';
+    if (user && noAdminExists) return 'setup-admin';
+    return tab;
+  }, [user, role, inviteToken, noAdminExists, tab]);
+
+  /* ================= POST AUTH ORCHESTRATION ================= */
+
+  useEffect(() => {
+    if (authLoading || roleLoading || !user) return;
+
+    const run = async () => {
+      switch (authFlow) {
+        case 'setup-admin':
+          await supabase.rpc('setup_first_admin', {
+            target_user_id: user.id,
+          });
+          await refetchRole();
+          break;
+
+        case 'invite':
+          if (!role && inviteToken) {
+            await acceptInvitation(inviteToken);
+            await refetchRole();
+            window.history.replaceState({}, '', '/auth');
+          }
+          break;
+
+        case 'redirect':
+          redirectByRole(role!);
+          break;
       }
     };
 
-    run();
-  }, [searchParams]);
-
-  /* ==================================================== */
-  /* ================= POST AUTH FLOW =================== */
-  /* ==================================================== */
-  useEffect(() => {
-    if (!user || authLoading || roleLoading) return;
-
-    // ETAP 1 – wykonujemy akcje wymagające refetchRole
-    if (postAuthStage.current === 'idle') {
-      if (isAdminSetup && noAdminExists) {
-        postAuthStage.current = 'waiting_for_role';
-        setupFirstAdmin();
-        return;
-      }
-
-      if (inviteToken && inviteValid) {
-        postAuthStage.current = 'waiting_for_role';
-        acceptInvite();
-        return;
-      }
-
-      if (role) {
-        redirectByRole(role);
-        return;
-      }
-
-      postAuthStage.current = 'waiting_for_role';
-      return;
-    }
-
-    // ETAP 2 – czekamy aż rola się REALNIE pojawi
-    if (postAuthStage.current === 'waiting_for_role' && role) {
-      redirectByRole(role);
-    }
-  }, [user, authLoading, roleLoading, role]);
-
-  /* -------------------- helpers -------------------- */
-  const redirectByRole = (r: string) => {
-    if (r === 'admin') navigate('/admin', { replace: true });
-    else if (r === 'coach') navigate('/', { replace: true });
-    else if (r === 'client') navigate('/client', { replace: true });
-    else {
+    run().catch((e) =>
       toast({
-        title: 'Brak roli',
-        description: 'Skontaktuj się z administratorem',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const setupFirstAdmin = async () => {
-    try {
-      const { error } = await supabase.rpc('setup_first_admin', {
-        target_user_id: user!.id,
-      });
-      if (error) throw error;
-      await refetchRole();
-    } catch (e: any) {
-      toast({
-        title: 'Błąd admina',
+        title: 'Błąd autoryzacji',
         description: e.message,
         variant: 'destructive',
-      });
-    }
+      })
+    );
+  }, [authFlow, user, role]);
+
+  /* ================= ACTIONS ================= */
+
+  const redirectByRole = (r: string) => {
+    const map: Record<string, string> = {
+      admin: '/admin',
+      coach: '/',
+      client: '/client',
+    };
+
+    navigate(map[r] ?? '/auth', { replace: true });
   };
 
-  const acceptInvite = async () => {
-    if (!inviteToken) return;
-    const { success } = await acceptInvitation(inviteToken);
-    if (!success) return;
-    await refetchRole();
-    window.history.replaceState({}, '', '/auth');
-  };
-
-  /* -------------------- login -------------------- */
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!emailSchema.safeParse(loginEmail).success) return;
 
-    setIsLoading(true);
+    setBusy(true);
     const { error } = await signIn(loginEmail.trim(), loginPassword);
-    setIsLoading(false);
+    setBusy(false);
 
     if (error) {
-      toast({
-        title: 'Błąd logowania',
-        description: error.message,
-        variant: 'destructive',
-      });
+      toast({ title: 'Błąd logowania', description: error.message });
     }
   };
 
-  /* -------------------- signup -------------------- */
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!emailSchema.safeParse(signupEmail).success) return;
-    if (!passwordSchema.safeParse(signupPassword).success) return;
+    if (
+      !emailSchema.safeParse(signupEmail).success ||
+      !passwordSchema.safeParse(signupPassword).success
+    )
+      return;
 
-    if (noAdminExists && !inviteValid) {
-      setIsAdminSetup(true);
-    }
-
-    setIsLoading(true);
+    setBusy(true);
     const { error } = await signUp(
       signupEmail.trim(),
       signupPassword,
       signupName || undefined,
-      { setup_admin: noAdminExists && !inviteValid }
+      { setup_admin: noAdminExists && !inviteToken }
     );
-    setIsLoading(false);
+    setBusy(false);
 
     if (error) {
-      setIsAdminSetup(false);
-      toast({
-        title: 'Błąd rejestracji',
-        description: error.message,
-        variant: 'destructive',
-      });
+      toast({ title: 'Błąd rejestracji', description: error.message });
     }
   };
 
-  /* -------------------- loading -------------------- */
+  /* ================= LOADING ================= */
+
   if (authLoading || checkingAdmin) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
+        <Loader2 className="animate-spin" />
       </div>
     );
   }
 
-  /* ==================== UI ==================== */
+  /* ================= UI ================= */
+
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
@@ -250,18 +215,18 @@ const Auth = () => {
           </div>
           <CardTitle>Trener Personalny Pro</CardTitle>
           <CardDescription>
-            {inviteValid
-              ? 'Utwórz konto, aby zaakceptować zaproszenie'
-              : noAdminExists
+            {authFlow === 'invite'
+              ? 'Akceptacja zaproszenia'
+              : authFlow === 'setup-admin'
               ? 'Konfiguracja pierwszego administratora'
-              : 'Zaloguj się lub utwórz konto'}
+              : 'Logowanie lub rejestracja'}
           </CardDescription>
         </CardHeader>
 
         <CardContent>
           <Tabs value={tab} onValueChange={(v) => setTab(v as any)}>
             <TabsList className="grid grid-cols-2 mb-6">
-              <TabsTrigger value="login" disabled={noAdminExists && !inviteValid}>
+              <TabsTrigger value="login" disabled={noAdminExists}>
                 Logowanie
               </TabsTrigger>
               <TabsTrigger value="signup">Rejestracja</TabsTrigger>
@@ -273,8 +238,8 @@ const Auth = () => {
                 <Input value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} />
                 <Label>Hasło</Label>
                 <Input type="password" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} />
-                <Button className="w-full" disabled={isLoading}>
-                  {isLoading ? <Loader2 className="animate-spin" /> : 'Zaloguj się'}
+                <Button className="w-full" disabled={busy}>
+                  {busy ? <Loader2 className="animate-spin" /> : 'Zaloguj'}
                 </Button>
               </form>
             </TabsContent>
@@ -282,10 +247,10 @@ const Auth = () => {
             <TabsContent value="signup">
               <form onSubmit={handleSignup} className="space-y-4">
                 <Input placeholder="Imię i nazwisko" value={signupName} onChange={(e) => setSignupName(e.target.value)} />
-                <Input placeholder="Email" value={signupEmail} disabled={inviteValid} onChange={(e) => setSignupEmail(e.target.value)} />
+                <Input placeholder="Email" value={signupEmail} disabled={!!inviteToken} onChange={(e) => setSignupEmail(e.target.value)} />
                 <Input type="password" placeholder="Hasło" value={signupPassword} onChange={(e) => setSignupPassword(e.target.value)} />
-                <Button className="w-full" disabled={isLoading}>
-                  {isLoading ? <Loader2 className="animate-spin" /> : 'Utwórz konto'}
+                <Button className="w-full" disabled={busy}>
+                  {busy ? <Loader2 className="animate-spin" /> : 'Utwórz konto'}
                 </Button>
               </form>
             </TabsContent>
@@ -297,3 +262,4 @@ const Auth = () => {
 };
 
 export default Auth;
+
