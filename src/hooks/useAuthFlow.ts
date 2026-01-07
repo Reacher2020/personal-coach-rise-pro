@@ -1,123 +1,121 @@
-import { useEffect, useState, useMemo } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
-import { useUserRole } from '@/hooks/useUserRole';
-import { useInvitations } from '@/hooks/useInvitations';
 import { useToast } from '@/hooks/use-toast';
+import { z } from 'zod';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
-export type AuthFlow =
-  | 'login'
-  | 'signup'
-  | 'invite'
-  | 'setup-admin'
-  | 'redirect'
-  | 'loading';
+const emailSchema = z.string().trim().email('Nieprawidłowy email').max(255);
+const passwordSchema = z.string().min(6, 'Min. 6 znaków').max(72);
 
 export const useAuthFlow = () => {
-  const navigate = useNavigate();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  const { user, signIn, signUp, loading: authLoading } = useAuth();
-  const { role, loading: roleLoading, refetchRole } = useUserRole();
-  const { getInvitationByToken, acceptInvitation } = useInvitations();
-
-  const inviteToken = searchParams.get('invite');
+  const [loading, setLoading] = useState(true);
+  const [inviteToken, setInviteToken] = useState<string | null>(null);
   const [noAdminExists, setNoAdminExists] = useState(false);
-  const [checkingAdmin, setCheckingAdmin] = useState(true);
+  const [authFlow, setAuthFlow] = useState<'login' | 'invite' | 'setup-admin'>('login');
 
-  /* ================= CHECK ADMIN ================= */
   useEffect(() => {
-    supabase
-      .rpc('admin_exists')
-      .then(({ data }) => {
-        if (data === false) setNoAdminExists(true);
-      })
-      .finally(() => setCheckingAdmin(false));
-  }, []);
-
-  /* ================= INVITE PREFILL ================= */
-  useEffect(() => {
-    if (!inviteToken) return;
-
-    getInvitationByToken(inviteToken)
-      .then(({ data }) => {
-        if (!data) throw new Error('Nieprawidłowy token zaproszenia');
-      })
-      .catch(() =>
-        toast({
-          title: 'Błąd zaproszenia',
-          description: 'Token jest nieprawidłowy lub wygasł',
-          variant: 'destructive',
-        })
-      );
-  }, [inviteToken]);
-
-  /* ================= DETERMINE FLOW ================= */
-  const authFlow: AuthFlow = useMemo(() => {
-    if (authLoading || roleLoading || checkingAdmin) return 'loading';
-
-    if (!user) {
-      if (noAdminExists) return 'signup';       // pierwszy admin
-      if (inviteToken) return 'invite';        // zaproszenie
-      return 'login';                          // zwykły login
-    }
-
-    if (user && inviteToken) return 'invite';
-    if (user && noAdminExists) return 'setup-admin';
-    if (user && role) return 'redirect';
-
-    return 'login';
-  }, [user, role, authLoading, roleLoading, checkingAdmin, noAdminExists, inviteToken]);
-
-  /* ================= POST AUTH ACTIONS ================= */
-  useEffect(() => {
-    if (!user || authFlow === 'login' || authFlow === 'signup' || authFlow === 'loading') return;
-
-    const run = async () => {
+    const init = async () => {
       try {
-        if (authFlow === 'setup-admin') {
-          await supabase.rpc('setup_first_admin', { target_user_id: user.id });
-          await refetchRole();
+        // Sprawdź czy istnieje admin
+        const { data: adminExists } = await supabase.rpc('admin_exists');
+        if (!adminExists) {
+          setNoAdminExists(true);
         }
 
-        if (authFlow === 'invite' && inviteToken) {
-          await acceptInvitation(inviteToken);
-          await refetchRole();
-          window.history.replaceState({}, '', '/auth');
+        // Sprawdź token zaproszenia
+        const token = searchParams.get('invite');
+        if (token) {
+          setInviteToken(token);
         }
 
-        if (authFlow === 'redirect' && role) {
-          const map: Record<string, string> = {
-            admin: '/admin',
-            coach: '/',
-            client: '/client',
-          };
-          navigate(map[role] ?? '/auth', { replace: true });
+        // Ustal flow
+        if (!adminExists && !token) {
+          setAuthFlow('setup-admin');
+        } else if (token) {
+          setAuthFlow('invite');
+        } else {
+          setAuthFlow('login');
         }
-      } catch (e: any) {
-        toast({ title: 'Błąd autoryzacji', description: e.message, variant: 'destructive' });
+      } catch (e) {
+        toast({ title: 'Błąd', description: 'Nie udało się ustalić stanu auth', variant: 'destructive' });
+      } finally {
+        setLoading(false);
       }
     };
+    init();
+  }, [searchParams]);
 
-    run();
-  }, [authFlow, user, role, inviteToken]);
+  const handleLogin = async (email?: string, password?: string) => {
+    if (!email || !password) {
+      toast({ title: 'Błąd', description: 'Email i hasło są wymagane', variant: 'destructive' });
+      return;
+    }
 
-  /* ================= LOGIN / SIGNUP ================= */
-  const handleLogin = async (email: string, password: string) => {
-    if (!email || !password) return;
-    const { error } = await signIn(email.trim(), password);
-    if (error) toast({ title: 'Błąd logowania', description: error.message });
+    const emailValidation = emailSchema.safeParse(email);
+    const passwordValidation = passwordSchema.safeParse(password);
+
+    if (!emailValidation.success) {
+      toast({ title: 'Błąd', description: emailValidation.error.errors[0].message, variant: 'destructive' });
+      return;
+    }
+
+    if (!passwordValidation.success) {
+      toast({ title: 'Błąd', description: passwordValidation.error.errors[0].message, variant: 'destructive' });
+      return;
+    }
+
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
+      if (error) throw error;
+
+      toast({ title: 'Sukces', description: 'Zalogowano pomyślnie', variant: 'default' });
+      navigate('/'); // redirect po loginie, role można sprawdzić w AppRoutes/AuthGuard
+    } catch (e: any) {
+      toast({ title: 'Błąd logowania', description: e.message, variant: 'destructive' });
+    }
   };
 
-  const handleSignup = async (email: string, password: string, name?: string) => {
-    if (!email || !password) return;
-    const { error } = await signUp(email.trim(), password, name, {
-      setup_admin: noAdminExists && !inviteToken,
-    });
-    if (error) toast({ title: 'Błąd rejestracji', description: error.message });
+  const handleSignup = async (email?: string, password?: string, name?: string) => {
+    if (!email || !password) {
+      toast({ title: 'Błąd', description: 'Email i hasło są wymagane', variant: 'destructive' });
+      return;
+    }
+
+    const emailValidation = emailSchema.safeParse(email);
+    const passwordValidation = passwordSchema.safeParse(password);
+
+    if (!emailValidation.success) {
+      toast({ title: 'Błąd', description: emailValidation.error.errors[0].message, variant: 'destructive' });
+      return;
+    }
+
+    if (!passwordValidation.success) {
+      toast({ title: 'Błąd', description: passwordValidation.error.errors[0].message, variant: 'destructive' });
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email: email.trim(),
+        password,
+        options: { data: { full_name: name } },
+      });
+
+      if (error) throw error;
+
+      toast({ title: 'Sukces', description: 'Konto utworzone', variant: 'default' });
+      navigate('/'); // redirect po signup
+    } catch (e: any) {
+      toast({ title: 'Błąd rejestracji', description: e.message, variant: 'destructive' });
+    }
   };
 
-  return { authFlow, handleLogin, handleSignup, loading: authFlow === 'loading', inviteToken, noAdminExists };
+  return { authFlow, handleLogin, handleSignup, loading, inviteToken, noAdminExists };
 };

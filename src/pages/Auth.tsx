@@ -2,13 +2,12 @@ import { useState, useEffect } from 'react';
 import { useAuthFlow } from '@/hooks/useAuthFlow';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Loader2, Dumbbell, UserPlus, Shield } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 const Auth = () => {
-  const { authFlow, handleLogin, handleSignup, loading, inviteToken, noAdminExists } = useAuthFlow();
+  const { authFlow, handleLogin, handleSignup, loading, inviteToken } = useAuthFlow();
 
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
@@ -16,11 +15,8 @@ const Auth = () => {
   const [signupPassword, setSignupPassword] = useState('');
   const [signupName, setSignupName] = useState('');
 
-  // pre-fill email z invite
   useEffect(() => {
-    if (authFlow === 'invite' && inviteToken) {
-      setSignupEmail(inviteToken); // jeśli token zawiera email
-    }
+    if (authFlow === 'invite' && inviteToken) setSignupEmail(inviteToken);
   }, [authFlow, inviteToken]);
 
   if (loading) {
@@ -32,6 +28,12 @@ const Auth = () => {
   }
 
   const isSignup = authFlow === 'invite' || authFlow === 'setup-admin';
+  const title = isSignup ? 'Rejestracja' : 'Logowanie';
+  const description = isSignup
+    ? authFlow === 'invite'
+      ? 'Utwórz konto, aby zaakceptować zaproszenie'
+      : 'Konfiguracja pierwszego administratora'
+    : 'Zaloguj się, aby kontynuować';
 
   const getBadge = () => {
     if (authFlow === 'setup-admin') return <Badge variant="destructive">Pierwszy Admin</Badge>;
@@ -44,13 +46,6 @@ const Auth = () => {
     if (authFlow === 'invite') return <UserPlus className="text-white h-6 w-6" />;
     return <Dumbbell className="text-white h-6 w-6" />;
   };
-
-  const title = isSignup ? 'Rejestracja' : 'Logowanie';
-  const description = isSignup
-    ? authFlow === 'invite'
-      ? 'Utwórz konto, aby zaakceptować zaproszenie'
-      : 'Konfiguracja pierwszego administratora'
-    : 'Zaloguj się, aby kontynuować';
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
@@ -73,15 +68,11 @@ const Auth = () => {
                 handleSignup(signupEmail, signupPassword, signupName);
               }}
             >
-              <Input
-                placeholder="Imię i nazwisko"
-                value={signupName}
-                onChange={(e) => setSignupName(e.target.value)}
-              />
+              <Input placeholder="Imię i nazwisko" value={signupName} onChange={(e) => setSignupName(e.target.value)} />
               <Input
                 placeholder="Email"
                 value={signupEmail}
-                disabled={!!inviteToken} // invite zablokowane
+                disabled={!!inviteToken}
                 onChange={(e) => setSignupEmail(e.target.value)}
               />
               <Input
@@ -90,9 +81,7 @@ const Auth = () => {
                 value={signupPassword}
                 onChange={(e) => setSignupPassword(e.target.value)}
               />
-              <Button className="w-full" variant="primary">
-                Utwórz konto
-              </Button>
+              <Button className="w-full">Utwórz konto</Button>
             </form>
           ) : (
             <form
@@ -102,17 +91,14 @@ const Auth = () => {
                 handleLogin(loginEmail, loginPassword);
               }}
             >
-              <Label>Email</Label>
-              <Input value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} />
-              <Label>Hasło</Label>
+              <Input placeholder="Email" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} />
               <Input
                 type="password"
+                placeholder="Hasło"
                 value={loginPassword}
                 onChange={(e) => setLoginPassword(e.target.value)}
               />
-              <Button className="w-full" variant="primary">
-                Zaloguj
-              </Button>
+              <Button className="w-full">Zaloguj</Button>
             </form>
           )}
         </CardContent>
