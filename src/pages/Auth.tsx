@@ -29,15 +29,12 @@ const Auth = () => {
 
   const isSignup = authFlow === 'invite' || authFlow === 'setup-admin';
   const title = isSignup ? 'Rejestracja' : 'Logowanie';
-
-  const description = isSignup
-    ? 'Utwórz konto, aby kontynuować'
-    : 'Zaloguj się';
+  const description = isSignup ? 'Utwórz konto, aby kontynuować' : 'Zaloguj się';
 
   const getBadge = () => {
     if (authFlow === 'setup-admin') return <Badge variant="destructive">Pierwszy Admin</Badge>;
     if (authFlow === 'invite') return <Badge variant="secondary">Zaproszenie</Badge>;
-    return <Badge variant="outline">Logowanie</Badge>;
+    return null; // brak badge dla zwykłego logowania
   };
 
   const getIcon = () => {
@@ -54,7 +51,7 @@ const Auth = () => {
             {getIcon()}
           </div>
           <CardTitle>{title}</CardTitle>
-          <div className="flex justify-center my-2">{getBadge()}</div>
+          {getBadge() && <div className="flex justify-center my-2">{getBadge()}</div>}
           <CardDescription>{description}</CardDescription>
         </CardHeader>
 
