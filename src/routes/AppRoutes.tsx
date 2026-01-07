@@ -4,7 +4,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from '@/auth/AuthContext'
 import { AuthGuard } from '@/auth/AuthGuard'
 
-import AuthPage from '@/pages/Auth'
+import AuthPage from '@/auth/Auth'
 import AdminPage from '@/pages/Admin'
 import AppPage from '@/pages/App'
 
