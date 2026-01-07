@@ -38,7 +38,7 @@ const App = () => (
         <AuthProvider>
           <UserRoleProvider>
             <Routes>
-              <Route path="/auth" element={<Auth />} />
+              <Route path="/" element={<Auth />} />
               
               {/* Admin Routes */}
               <Route path="/admin" element={
