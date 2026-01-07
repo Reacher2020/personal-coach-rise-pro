@@ -8,7 +8,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Loader2, Dumbbell } from 'lucide-react';
 
 const Auth = () => {
-  const { authFlow, handleLogin, handleSignup, loading } = useAuthFlow();
+  const { authFlow, handleLogin, handleSignup, loading, inviteToken, noAdminExists } = useAuthFlow();
   const [tab, setTab] = useState<'login' | 'signup'>('login');
 
   const [loginEmail, setLoginEmail] = useState('');
@@ -20,7 +20,7 @@ const Auth = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="animate-spin" />
+        <Loader2 className="animate-spin h-8 w-8" />
       </div>
     );
   }
@@ -38,7 +38,7 @@ const Auth = () => {
               ? 'Akceptacja zaproszenia'
               : authFlow === 'setup-admin'
               ? 'Konfiguracja pierwszego administratora'
-              : 'Logowanie lub rejestracja'}
+              : 'Logowanie'}
           </CardDescription>
         </CardHeader>
 
@@ -46,7 +46,12 @@ const Auth = () => {
           <Tabs value={tab} onValueChange={(v) => setTab(v as any)}>
             <TabsList className="grid grid-cols-2 mb-6">
               <TabsTrigger value="login">Logowanie</TabsTrigger>
-              <TabsTrigger value="signup">Rejestracja</TabsTrigger>
+              <TabsTrigger
+                value="signup"
+                disabled={!inviteToken && !noAdminExists} // signup tylko z invite lub pierwszy admin
+              >
+                Rejestracja
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="login">
@@ -58,9 +63,9 @@ const Auth = () => {
                 }}
               >
                 <Label>Email</Label>
-                <Input placeholder="Email" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} />
+                <Input value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} />
                 <Label>Hasło</Label>
-                <Input placeholder="Hasło" type="password" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} />
+                <Input type="password" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} />
                 <Button className="w-full">Zaloguj</Button>
               </form>
             </TabsContent>
@@ -74,8 +79,13 @@ const Auth = () => {
                 }}
               >
                 <Input placeholder="Imię i nazwisko" value={signupName} onChange={(e) => setSignupName(e.target.value)} />
-                <Input placeholder="twoj@email.pl" value={signupEmail} onChange={(e) => setSignupEmail(e.target.value)} />
-                <Input type="*******" placeholder="Hasło" value={signupPassword} onChange={(e) => setSignupPassword(e.target.value)} />
+                <Input
+                  placeholder="Email"
+                  value={signupEmail}
+                  disabled={!!inviteToken} // nie można zmienić email z invite
+                  onChange={(e) => setSignupEmail(e.target.value)}
+                />
+                <Input type="password" placeholder="Hasło" value={signupPassword} onChange={(e) => setSignupPassword(e.target.value)} />
                 <Button className="w-full">Utwórz konto</Button>
               </form>
             </TabsContent>
@@ -87,4 +97,3 @@ const Auth = () => {
 };
 
 export default Auth;
-

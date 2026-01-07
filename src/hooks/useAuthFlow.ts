@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -43,7 +43,7 @@ export const useAuthFlow = () => {
 
     getInvitationByToken(inviteToken)
       .then(({ data }) => {
-        if (!data) throw new Error('Nieprawidłowy token');
+        if (!data) throw new Error('Nieprawidłowy token zaproszenia');
       })
       .catch(() =>
         toast({
@@ -55,14 +55,21 @@ export const useAuthFlow = () => {
   }, [inviteToken]);
 
   /* ================= DETERMINE FLOW ================= */
-  const authFlow: AuthFlow = (() => {
+  const authFlow: AuthFlow = useMemo(() => {
     if (authLoading || roleLoading || checkingAdmin) return 'loading';
-    if (!user) return inviteToken || noAdminExists ? 'signup' : 'login';
+
+    if (!user) {
+      if (noAdminExists) return 'signup';       // pierwszy admin
+      if (inviteToken) return 'invite';        // zaproszenie
+      return 'login';                          // zwykły login
+    }
+
     if (user && inviteToken) return 'invite';
     if (user && noAdminExists) return 'setup-admin';
     if (user && role) return 'redirect';
+
     return 'login';
-  })();
+  }, [user, role, authLoading, roleLoading, checkingAdmin, noAdminExists, inviteToken]);
 
   /* ================= POST AUTH ACTIONS ================= */
   useEffect(() => {
@@ -75,12 +82,10 @@ export const useAuthFlow = () => {
           await refetchRole();
         }
 
-        if (authFlow === 'invite') {
-          if (!role && inviteToken) {
-            await acceptInvitation(inviteToken);
-            await refetchRole();
-            window.history.replaceState({}, '', '/auth');
-          }
+        if (authFlow === 'invite' && inviteToken) {
+          await acceptInvitation(inviteToken);
+          await refetchRole();
+          window.history.replaceState({}, '', '/auth');
         }
 
         if (authFlow === 'redirect' && role) {
@@ -114,5 +119,5 @@ export const useAuthFlow = () => {
     if (error) toast({ title: 'Błąd rejestracji', description: error.message });
   };
 
-  return { authFlow, handleLogin, handleSignup, loading: authFlow === 'loading' };
+  return { authFlow, handleLogin, handleSignup, loading: authFlow === 'loading', inviteToken, noAdminExists };
 };
