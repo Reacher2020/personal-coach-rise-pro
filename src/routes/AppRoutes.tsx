@@ -1,41 +1,46 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
-import { AuthProvider } from '@/auth/AuthContext'
-import { AuthGuard } from '@/auth/AuthGuard'
+import { Routes, Route } from 'react-router-dom';
+import Auth from '@/pages/Auth';
+import AdminDashboard from '@/pages/admin/AdminDashboard';
+import CoachDashboard from '@/pages/coach/CoachDashboard';
+import ClientDashboard from '@/pages/client/ClientDashboard';
+import { AuthGuard } from '@/components/AuthGuard';
 
-import AuthPage from '@/pages/Auth'
-import AppPage from '@/pages/App'
-import AdminPage from '@/pages/Admin'
+export const AppRoutes = () => (
+  <Routes>
+    {/* public route */}
+    <Route path="/auth" element={<Auth />} />
 
-export default function AppRoutes() {
-  return (
-    <AuthProvider>
-      <Routes>
-        {/* PUBLIC */}
-        <Route path="/auth" element={<AuthPage />} />
+    {/* admin routes */}
+    <Route
+      path="/admin/*"
+      element={
+        <AuthGuard allowedRoles={['admin']}>
+          <AdminDashboard />
+        </AuthGuard>
+      }
+    />
 
-        {/* ADMIN */}
-        <Route
-          path="/admin"
-          element={
-            <AuthGuard>
-              <AdminPage />
-            </AuthGuard>
-          }
-        />
+    {/* coach routes */}
+    <Route
+      path="/"
+      element={
+        <AuthGuard allowedRoles={['coach']}>
+          <CoachDashboard />
+        </AuthGuard>
+      }
+    />
 
-        {/* USER */}
-        <Route
-          path="/"
-          element={
-            <AuthGuard>
-              <AppPage />
-            </AuthGuard>
-          }
-        />
+    {/* client routes */}
+    <Route
+      path="/client/*"
+      element={
+        <AuthGuard allowedRoles={['client']}>
+          <ClientDashboard />
+        </AuthGuard>
+      }
+    />
 
-        {/* FALLBACK */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </AuthProvider>
-  )
-}
+    {/* fallback */}
+    <Route path="*" element={<Auth />} />
+  </Routes>
+);
