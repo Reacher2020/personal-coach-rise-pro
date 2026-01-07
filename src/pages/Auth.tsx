@@ -58,9 +58,9 @@ const Auth = () => {
                 }}
               >
                 <Label>Email</Label>
-                <Input value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} />
+                <Input placeholder="Email" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} />
                 <Label>Hasło</Label>
-                <Input type="password" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} />
+                <Input placeholder="Hasło" type="password" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} />
                 <Button className="w-full">Zaloguj</Button>
               </form>
             </TabsContent>
