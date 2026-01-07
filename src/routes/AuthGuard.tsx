@@ -18,6 +18,7 @@ export const AuthGuard = ({ children, allowedRoles = [], redirectTo = '/auth' }:
   useEffect(() => {
     const checkAuth = async () => {
       setLoading(true);
+
       const { data: sessionData } = await supabase.auth.getSession();
       const user = sessionData.session?.user || null;
       setUser(user);
@@ -28,7 +29,7 @@ export const AuthGuard = ({ children, allowedRoles = [], redirectTo = '/auth' }:
         return;
       }
 
-      // pobierz rolę użytkownika
+      // pobranie roli
       const { data: roleData } = await supabase
         .from('user_roles')
         .select('role')

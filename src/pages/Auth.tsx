@@ -29,11 +29,10 @@ const Auth = () => {
 
   const isSignup = authFlow === 'invite' || authFlow === 'setup-admin';
   const title = isSignup ? 'Rejestracja' : 'Logowanie';
+
   const description = isSignup
-    ? authFlow === 'invite'
-      ? 'Utwórz konto, aby zaakceptować zaproszenie'
-      : 'Konfiguracja pierwszego administratora'
-    : 'Zaloguj się, aby kontynuować';
+    ? 'Utwórz konto, aby kontynuować'
+    : 'Zaloguj się';
 
   const getBadge = () => {
     if (authFlow === 'setup-admin') return <Badge variant="destructive">Pierwszy Admin</Badge>;
