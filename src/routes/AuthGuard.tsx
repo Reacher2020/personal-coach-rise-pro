@@ -1,60 +1,33 @@
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { Loader2 } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { useUserRole } from '@/hooks/useUserRole';
+import { useToast } from '@/hooks/use-toast';
 
 interface AuthGuardProps {
   children: ReactNode;
-  allowedRoles?: string[];
-  redirectTo?: string;
+  allowedRoles: string[];
+  fallback?: string;
 }
 
-export const AuthGuard = ({ children, allowedRoles = [], redirectTo = '/auth' }: AuthGuardProps) => {
-  const [loading, setLoading] = useState(true);
-  const [role, setRole] = useState<string | null>(null);
-  const [user, setUser] = useState<any>(null);
+export const AuthGuard = ({ children, allowedRoles, fallback = '/auth' }: AuthGuardProps) => {
+  const { user, loading: authLoading } = useAuth();
+  const { role, loading: roleLoading } = useUserRole();
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   useEffect(() => {
-    const checkAuth = async () => {
-      setLoading(true);
+    if (authLoading || roleLoading) return;
+    if (!user || !role || !allowedRoles.includes(role)) {
+      toast({
+        title: 'Brak dostępu',
+        description: 'Nie masz uprawnień do tej strony',
+        variant: 'destructive',
+      });
+      navigate(fallback, { replace: true });
+    }
+  }, [user, role, authLoading, roleLoading]);
 
-      const { data: sessionData } = await supabase.auth.getSession();
-      const user = sessionData.session?.user || null;
-      setUser(user);
-
-      if (!user) {
-        setLoading(false);
-        navigate(redirectTo, { replace: true });
-        return;
-      }
-
-      // pobranie roli
-      const { data: roleData } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .single();
-
-      setRole(roleData?.role || null);
-
-      if (allowedRoles.length > 0 && !allowedRoles.includes(roleData?.role)) {
-        navigate(redirectTo, { replace: true });
-      }
-
-      setLoading(false);
-    };
-
-    checkAuth();
-  }, [allowedRoles, navigate, redirectTo]);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="animate-spin h-10 w-10 text-primary" />
-      </div>
-    );
-  }
-
+  if (authLoading || roleLoading || !user || !role) return null; // zero flicker
   return <>{children}</>;
 };

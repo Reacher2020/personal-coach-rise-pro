@@ -1,77 +1,72 @@
-import { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
-const emailSchema = z.string().trim().email();
-const passwordSchema = z.string().min(6);
-
-type AuthFlow = 'login' | 'invite' | 'setup-admin';
+const emailSchema = z.string().trim().email('Nieprawidłowy email').max(255);
+const passwordSchema = z.string().min(6, 'Min. 6 znaków').max(72);
 
 export const useAuthFlow = () => {
+  const { toast } = useToast();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { toast } = useToast();
 
   const [loading, setLoading] = useState(true);
-  const [authFlow, setAuthFlow] = useState<AuthFlow>('login');
-
   const [inviteToken, setInviteToken] = useState<string | null>(null);
-  const [inviteEmail, setInviteEmail] = useState<string | null>(null);
-  const [inviteRole, setInviteRole] = useState<string | null>(null);
-
-  /* ================= INIT FLOW ================= */
+  const [noAdminExists, setNoAdminExists] = useState(false);
+  const [authFlow, setAuthFlow] = useState<'login' | 'invite' | 'setup-admin'>('login');
 
   useEffect(() => {
     const init = async () => {
-      setLoading(true);
-
-      const invite = searchParams.get('invite');
-
-      // 1️⃣ Zaproszenie
-      if (invite) {
-        const { data } = await supabase
-          .from('invitations')
-          .select('email, role')
-          .eq('token', invite)
-          .single();
-
-        if (data?.email && data?.role) {
-          setInviteToken(invite);
-          setInviteEmail(data.email);
-          setInviteRole(data.role);
-          setAuthFlow('invite');
-          setLoading(false);
-          return;
+      try {
+        // Sprawdź czy istnieje admin
+        const { data: adminExists } = await supabase.rpc('admin_exists');
+        if (!adminExists) {
+          setNoAdminExists(true);
         }
-      }
 
-      // 2️⃣ Pierwszy admin
-      const { data: adminExists } = await supabase.rpc('admin_exists');
-      if (adminExists === false) {
-        setAuthFlow('setup-admin');
+        // Sprawdź token zaproszenia
+        const token = searchParams.get('invite');
+        if (token) {
+          setInviteToken(token);
+        }
+
+        // Ustal flow
+        if (!adminExists && !token) {
+          setAuthFlow('setup-admin');
+        } else if (token) {
+          setAuthFlow('invite');
+        } else {
+          setAuthFlow('login');
+        }
+      } catch (e) {
+        toast({ title: 'Błąd', description: 'Nie udało się ustalić stanu auth', variant: 'destructive' });
+      } finally {
         setLoading(false);
-        return;
       }
-
-      // 3️⃣ Login
-      setAuthFlow('login');
-      setLoading(false);
     };
-
     init();
   }, [searchParams]);
 
-  /* ================= LOGIN ================= */
-
   const handleLogin = async (email?: string, password?: string) => {
-    if (!email || !password) return;
+    if (!email || !password) {
+      toast({ title: 'Błąd', description: 'Email i hasło są wymagane', variant: 'destructive' });
+      return;
+    }
 
-    if (!emailSchema.safeParse(email).success)
-      return toast({ title: 'Błąd', description: 'Nieprawidłowy email', variant: 'destructive' });
+    const emailValidation = emailSchema.safeParse(email);
+    const passwordValidation = passwordSchema.safeParse(password);
 
-    setLoading(true);
+    if (!emailValidation.success) {
+      toast({ title: 'Błąd', description: emailValidation.error.errors[0].message, variant: 'destructive' });
+      return;
+    }
+
+    if (!passwordValidation.success) {
+      toast({ title: 'Błąd', description: passwordValidation.error.errors[0].message, variant: 'destructive' });
+      return;
+    }
 
     try {
       const { error } = await supabase.auth.signInWithPassword({
@@ -80,78 +75,47 @@ export const useAuthFlow = () => {
       });
       if (error) throw error;
 
-      await redirectByRole();
+      toast({ title: 'Sukces', description: 'Zalogowano pomyślnie', variant: 'default' });
+      navigate('/'); // redirect po loginie, role można sprawdzić w AppRoutes/AuthGuard
     } catch (e: any) {
       toast({ title: 'Błąd logowania', description: e.message, variant: 'destructive' });
-      setLoading(false);
     }
   };
 
-  /* ================= SIGNUP ================= */
-
   const handleSignup = async (email?: string, password?: string, name?: string) => {
-    if (!email || !password) return;
+    if (!email || !password) {
+      toast({ title: 'Błąd', description: 'Email i hasło są wymagane', variant: 'destructive' });
+      return;
+    }
 
-    if (!emailSchema.safeParse(email).success)
-      return toast({ title: 'Błąd', description: 'Nieprawidłowy email', variant: 'destructive' });
+    const emailValidation = emailSchema.safeParse(email);
+    const passwordValidation = passwordSchema.safeParse(password);
 
-    if (!passwordSchema.safeParse(password).success)
-      return toast({ title: 'Błąd', description: 'Hasło min. 6 znaków', variant: 'destructive' });
+    if (!emailValidation.success) {
+      toast({ title: 'Błąd', description: emailValidation.error.errors[0].message, variant: 'destructive' });
+      return;
+    }
 
-    setLoading(true);
+    if (!passwordValidation.success) {
+      toast({ title: 'Błąd', description: passwordValidation.error.errors[0].message, variant: 'destructive' });
+      return;
+    }
 
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
         password,
         options: { data: { full_name: name } },
       });
+
       if (error) throw error;
 
-      // 🔒 INVITE → redirect deterministyczny
-      if (inviteToken && inviteRole) {
-        await supabase.rpc('accept_invitation', { token: inviteToken });
-        redirectImmediately(inviteRole);
-        return;
-      }
-
-      // 👑 Pierwszy admin / zwykły signup
-      await redirectByRole();
+      toast({ title: 'Sukces', description: 'Konto utworzone', variant: 'default' });
+      navigate('/'); // redirect po signup
     } catch (e: any) {
       toast({ title: 'Błąd rejestracji', description: e.message, variant: 'destructive' });
-      setLoading(false);
     }
   };
 
-  /* ================= REDIRECTS ================= */
-
-  const redirectImmediately = (role: string) => {
-    if (role === 'admin') navigate('/admin', { replace: true });
-    else if (role === 'coach') navigate('/', { replace: true });
-    else if (role === 'client') navigate('/client', { replace: true });
-    else navigate('/auth', { replace: true });
-  };
-
-  const redirectByRole = async () => {
-    const { data: session } = await supabase.auth.getSession();
-    const userId = session.session?.user.id;
-    if (!userId) return;
-
-    const { data } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', userId)
-      .single();
-
-    if (data?.role) redirectImmediately(data.role);
-    else navigate('/auth', { replace: true });
-  };
-
-  return {
-    authFlow,
-    loading,
-    handleLogin,
-    handleSignup,
-    inviteEmail,
-  };
+  return { authFlow, handleLogin, handleSignup, loading, inviteToken, noAdminExists };
 };

@@ -1,46 +1,43 @@
 import { Routes, Route } from 'react-router-dom';
 import Auth from '@/pages/Auth';
-import AdminDashboard from '@/pages/admin/AdminDashboard';
-import CoachDashboard from '@/pages/coach/CoachDashboard';
-import ClientDashboard from '@/pages/client/ClientDashboard';
+import AdminPage from '@/pages/Admin';
+import CoachPage from '@/pages/Coach';
+import ClientPage from '@/pages/Client';
 import { AuthGuard } from '@/components/AuthGuard';
 
-export const AppRoutes = () => (
-  <Routes>
-    {/* public route */}
-    <Route path="/auth" element={<Auth />} />
+export const AppRoutes = () => {
+  return (
+    <Routes>
+      <Route path="/auth" element={<Auth />} />
 
-    {/* admin routes */}
-    <Route
-      path="/admin/*"
-      element={
-        <AuthGuard allowedRoles={['admin']}>
-          <AdminDashboard />
-        </AuthGuard>
-      }
-    />
+      <Route
+        path="/admin"
+        element={
+          <AuthGuard allowedRoles={['admin']}>
+            <AdminPage />
+          </AuthGuard>
+        }
+      />
 
-    {/* coach routes */}
-    <Route
-      path="/"
-      element={
-        <AuthGuard allowedRoles={['coach']}>
-          <CoachDashboard />
-        </AuthGuard>
-      }
-    />
+      <Route
+        path="/"
+        element={
+          <AuthGuard allowedRoles={['coach']}>
+            <CoachPage />
+          </AuthGuard>
+        }
+      />
 
-    {/* client routes */}
-    <Route
-      path="/client/*"
-      element={
-        <AuthGuard allowedRoles={['client']}>
-          <ClientDashboard />
-        </AuthGuard>
-      }
-    />
+      <Route
+        path="/client"
+        element={
+          <AuthGuard allowedRoles={['client']}>
+            <ClientPage />
+          </AuthGuard>
+        }
+      />
 
-    {/* fallback */}
-    <Route path="*" element={<Auth />} />
-  </Routes>
-);
+      <Route path="*" element={<Auth />} />
+    </Routes>
+  );
+};
