@@ -1,9 +1,9 @@
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useToast } from './use-toast';
 
-export type InvitationRole = 'coach' | 'client' | 'admin';
+export type InvitationRole = 'coach' | 'client';
 
 interface Invitation {
   id: string;
@@ -14,35 +14,12 @@ interface Invitation {
   expires_at: string;
   created_at: string;
   accepted_at: string | null;
-  invited_by: string;
 }
 
 export const useInvitations = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [invitations, setInvitations] = useState<Invitation[]>([]);
-
-  const fetchInvitations = useCallback(async () => {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('invitations')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setInvitations(data as Invitation[] ?? []);
-    } catch (error: any) {
-      toast({
-        title: 'Błąd',
-        description: error.message,
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [toast]);
 
   const createInvitation = async (email: string, role: InvitationRole) => {
     if (!user) return { error: new Error('Not authenticated') };
@@ -66,7 +43,6 @@ export const useInvitations = () => {
         description: `Zaproszenie zostało utworzone dla ${email}`,
       });
 
-      await fetchInvitations();
       return { data, error: null };
     } catch (error: any) {
       toast({
@@ -152,7 +128,6 @@ export const useInvitations = () => {
 
       if (error) throw error;
 
-      setInvitations(prev => prev.filter(i => i.id !== id));
       toast({
         title: 'Zaproszenie usunięte',
         description: 'Zaproszenie zostało usunięte',
@@ -172,8 +147,6 @@ export const useInvitations = () => {
 
   return {
     loading,
-    invitations,
-    fetchInvitations,
     createInvitation,
     getMyInvitations,
     getAllInvitations,
