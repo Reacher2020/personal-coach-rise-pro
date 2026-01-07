@@ -74,8 +74,8 @@ const Auth = () => {
                 }}
               >
                 <Input placeholder="Imię i nazwisko" value={signupName} onChange={(e) => setSignupName(e.target.value)} />
-                <Input placeholder="Email" value={signupEmail} onChange={(e) => setSignupEmail(e.target.value)} />
-                <Input type="password" placeholder="Hasło" value={signupPassword} onChange={(e) => setSignupPassword(e.target.value)} />
+                <Input placeholder="twoj@email.pl" value={signupEmail} onChange={(e) => setSignupEmail(e.target.value)} />
+                <Input type="*******" placeholder="Hasło" value={signupPassword} onChange={(e) => setSignupPassword(e.target.value)} />
                 <Button className="w-full">Utwórz konto</Button>
               </form>
             </TabsContent>
