@@ -7,13 +7,7 @@ import { Loader2, Dumbbell, UserPlus, Shield } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 const Auth = () => {
-  const {
-    authFlow,
-    loading,
-    handleLogin,
-    handleSignup,
-    inviteEmail,
-  } = useAuthFlow();
+  const { authFlow, loading, handleLogin, handleSignup, inviteEmail } = useAuthFlow();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -21,7 +15,7 @@ const Auth = () => {
 
   useEffect(() => {
     if (authFlow === 'invite' && inviteEmail) {
-      setEmail(inviteEmail); // ✅ POPRAWNE ŹRÓDŁO EMAILA
+      setEmail(inviteEmail);
     }
   }, [authFlow, inviteEmail]);
 

@@ -19,8 +19,9 @@ export const useAuthFlow = () => {
 
   const [inviteToken, setInviteToken] = useState<string | null>(null);
   const [inviteEmail, setInviteEmail] = useState<string | null>(null);
+  const [inviteRole, setInviteRole] = useState<string | null>(null);
 
-  /* ================= INVITE / FIRST ADMIN CHECK ================= */
+  /* ================= INIT FLOW ================= */
 
   useEffect(() => {
     const init = async () => {
@@ -30,15 +31,16 @@ export const useAuthFlow = () => {
 
       // 1️⃣ Zaproszenie
       if (invite) {
-        const { data, error } = await supabase
+        const { data } = await supabase
           .from('invitations')
-          .select('email')
+          .select('email, role')
           .eq('token', invite)
           .single();
 
-        if (!error && data?.email) {
+        if (data?.email && data?.role) {
           setInviteToken(invite);
           setInviteEmail(data.email);
+          setInviteRole(data.role);
           setAuthFlow('invite');
           setLoading(false);
           return;
@@ -53,7 +55,7 @@ export const useAuthFlow = () => {
         return;
       }
 
-      // 3️⃣ Normalne logowanie
+      // 3️⃣ Login
       setAuthFlow('login');
       setLoading(false);
     };
@@ -102,16 +104,18 @@ export const useAuthFlow = () => {
       const { error } = await supabase.auth.signUp({
         email: email.trim(),
         password,
-        options: {
-          data: { full_name: name },
-        },
+        options: { data: { full_name: name } },
       });
       if (error) throw error;
 
-      if (inviteToken) {
+      // 🔒 INVITE → redirect deterministyczny
+      if (inviteToken && inviteRole) {
         await supabase.rpc('accept_invitation', { token: inviteToken });
+        redirectImmediately(inviteRole);
+        return;
       }
 
+      // 👑 Pierwszy admin / zwykły signup
       await redirectByRole();
     } catch (e: any) {
       toast({ title: 'Błąd rejestracji', description: e.message, variant: 'destructive' });
@@ -119,7 +123,14 @@ export const useAuthFlow = () => {
     }
   };
 
-  /* ================= REDIRECT ================= */
+  /* ================= REDIRECTS ================= */
+
+  const redirectImmediately = (role: string) => {
+    if (role === 'admin') navigate('/admin', { replace: true });
+    else if (role === 'coach') navigate('/', { replace: true });
+    else if (role === 'client') navigate('/client', { replace: true });
+    else navigate('/auth', { replace: true });
+  };
 
   const redirectByRole = async () => {
     const { data: session } = await supabase.auth.getSession();
@@ -132,9 +143,7 @@ export const useAuthFlow = () => {
       .eq('user_id', userId)
       .single();
 
-    if (data?.role === 'admin') navigate('/admin', { replace: true });
-    else if (data?.role === 'coach') navigate('/', { replace: true });
-    else if (data?.role === 'client') navigate('/client', { replace: true });
+    if (data?.role) redirectImmediately(data.role);
     else navigate('/auth', { replace: true });
   };
 
@@ -143,7 +152,6 @@ export const useAuthFlow = () => {
     loading,
     handleLogin,
     handleSignup,
-    inviteToken,
     inviteEmail,
   };
 };
