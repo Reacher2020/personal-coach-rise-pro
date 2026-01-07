@@ -22,24 +22,16 @@ export const useAuthFlow = () => {
       try {
         // Sprawdź czy istnieje admin
         const { data: adminExists } = await supabase.rpc('admin_exists');
-        if (!adminExists) {
-          setNoAdminExists(true);
-        }
+        if (!adminExists) setNoAdminExists(true);
 
         // Sprawdź token zaproszenia
         const token = searchParams.get('invite');
-        if (token) {
-          setInviteToken(token);
-        }
+        if (token) setInviteToken(token);
 
         // Ustal flow
-        if (!adminExists && !token) {
-          setAuthFlow('setup-admin');
-        } else if (token) {
-          setAuthFlow('invite');
-        } else {
-          setAuthFlow('login');
-        }
+        if (!adminExists && !token) setAuthFlow('setup-admin');
+        else if (token) setAuthFlow('invite');
+        else setAuthFlow('login');
       } catch (e) {
         toast({ title: 'Błąd', description: 'Nie udało się ustalić stanu auth', variant: 'destructive' });
       } finally {
@@ -62,21 +54,17 @@ export const useAuthFlow = () => {
       toast({ title: 'Błąd', description: emailValidation.error.errors[0].message, variant: 'destructive' });
       return;
     }
-
     if (!passwordValidation.success) {
       toast({ title: 'Błąd', description: passwordValidation.error.errors[0].message, variant: 'destructive' });
       return;
     }
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password,
-      });
+      const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
       if (error) throw error;
 
       toast({ title: 'Sukces', description: 'Zalogowano pomyślnie', variant: 'default' });
-      navigate('/'); // redirect po loginie, role można sprawdzić w AppRoutes/AuthGuard
+      navigate('/');
     } catch (e: any) {
       toast({ title: 'Błąd logowania', description: e.message, variant: 'destructive' });
     }
@@ -95,13 +83,13 @@ export const useAuthFlow = () => {
       toast({ title: 'Błąd', description: emailValidation.error.errors[0].message, variant: 'destructive' });
       return;
     }
-
     if (!passwordValidation.success) {
       toast({ title: 'Błąd', description: passwordValidation.error.errors[0].message, variant: 'destructive' });
       return;
     }
 
     try {
+      // Signup w Supabase
       const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
         password,
@@ -110,10 +98,24 @@ export const useAuthFlow = () => {
 
       if (error) throw error;
 
-      toast({ title: 'Sukces', description: 'Konto utworzone', variant: 'default' });
-      navigate('/'); // redirect po signup
+      // Dodatkowa walidacja invite: czy email już istnieje
+      if (authFlow === 'invite') {
+        const { data: existing } = await supabase
+          .from('users')
+          .select('id')
+          .eq('email', email.trim())
+          .single();
+
+        if (existing) {
+          toast({ title: 'Błąd', description: 'Email z zaproszenia już istnieje', variant: 'destructive' });
+          return;
+        }
+      }
+
+      toast({ title: 'Sukces', description: 'Konto utworzone pomyślnie', variant: 'default' });
+      navigate('/');
     } catch (e: any) {
-      toast({ title: 'Błąd rejestracji', description: e.message, variant: 'destructive' });
+      toast({ title: 'Błąd rejestracji', description: e.message || 'Nie udało się utworzyć konta', variant: 'destructive' });
     }
   };
 

@@ -1,42 +1,47 @@
-import { Routes, Route } from 'react-router-dom';
+import { Route, Routes } from 'react-router-dom';
 import Auth from '@/pages/Auth';
-import AdminPage from '@/pages/Admin';
-import CoachPage from '@/pages/Coach';
-import ClientPage from '@/pages/Client';
+import AdminDashboard from '@/pages/admin/AdminDashboard';
+import CoachDashboard from '@/pages/coach/CoachDashboard';
+import ClientDashboard from '@/pages/client/ClientDashboard';
 import { AuthGuard } from '@/components/AuthGuard';
 
 export const AppRoutes = () => {
   return (
     <Routes>
+      {/* Public route */}
       <Route path="/auth" element={<Auth />} />
 
+      {/* Admin routes */}
       <Route
-        path="/admin"
+        path="/admin/*"
         element={
           <AuthGuard allowedRoles={['admin']}>
-            <AdminPage />
+            <AdminDashboard />
           </AuthGuard>
         }
       />
 
+      {/* Coach routes */}
       <Route
         path="/"
         element={
           <AuthGuard allowedRoles={['coach']}>
-            <CoachPage />
+            <CoachDashboard />
           </AuthGuard>
         }
       />
 
+      {/* Client routes */}
       <Route
-        path="/client"
+        path="/client/*"
         element={
           <AuthGuard allowedRoles={['client']}>
-            <ClientPage />
+            <ClientDashboard />
           </AuthGuard>
         }
       />
 
+      {/* Catch-all redirect */}
       <Route path="*" element={<Auth />} />
     </Routes>
   );
