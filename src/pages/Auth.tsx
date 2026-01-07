@@ -1,15 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuthFlow } from '@/hooks/useAuthFlow';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Loader2, Dumbbell } from 'lucide-react';
+import { Loader2, Dumbbell, UserPlus, Shield } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 const Auth = () => {
   const { authFlow, handleLogin, handleSignup, loading, inviteToken, noAdminExists } = useAuthFlow();
-  const [tab, setTab] = useState<'login' | 'signup'>('login');
 
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
@@ -17,79 +16,105 @@ const Auth = () => {
   const [signupPassword, setSignupPassword] = useState('');
   const [signupName, setSignupName] = useState('');
 
+  // pre-fill email z invite
+  useEffect(() => {
+    if (authFlow === 'invite' && inviteToken) {
+      setSignupEmail(inviteToken); // jeśli token zawiera email
+    }
+  }, [authFlow, inviteToken]);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="animate-spin h-8 w-8" />
+        <Loader2 className="animate-spin h-10 w-10 text-primary" />
       </div>
     );
   }
 
+  const isSignup = authFlow === 'invite' || authFlow === 'setup-admin';
+
+  const getBadge = () => {
+    if (authFlow === 'setup-admin') return <Badge variant="destructive">Pierwszy Admin</Badge>;
+    if (authFlow === 'invite') return <Badge variant="secondary">Zaproszenie</Badge>;
+    return <Badge variant="outline">Logowanie</Badge>;
+  };
+
+  const getIcon = () => {
+    if (authFlow === 'setup-admin') return <Shield className="text-white h-6 w-6" />;
+    if (authFlow === 'invite') return <UserPlus className="text-white h-6 w-6" />;
+    return <Dumbbell className="text-white h-6 w-6" />;
+  };
+
+  const title = isSignup ? 'Rejestracja' : 'Logowanie';
+  const description = isSignup
+    ? authFlow === 'invite'
+      ? 'Utwórz konto, aby zaakceptować zaproszenie'
+      : 'Konfiguracja pierwszego administratora'
+    : 'Zaloguj się, aby kontynuować';
+
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 h-14 w-14 rounded-xl bg-primary flex items-center justify-center">
-            <Dumbbell className="text-white" />
+            {getIcon()}
           </div>
-          <CardTitle>Trener Personalny Pro</CardTitle>
-          <CardDescription>
-            {authFlow === 'invite'
-              ? 'Akceptacja zaproszenia'
-              : authFlow === 'setup-admin'
-              ? 'Konfiguracja pierwszego administratora'
-              : 'Logowanie'}
-          </CardDescription>
+          <CardTitle>{title}</CardTitle>
+          <div className="flex justify-center my-2">{getBadge()}</div>
+          <CardDescription>{description}</CardDescription>
         </CardHeader>
 
         <CardContent>
-          <Tabs value={tab} onValueChange={(v) => setTab(v as any)}>
-            <TabsList className="grid grid-cols-2 mb-6">
-              <TabsTrigger value="login">Logowanie</TabsTrigger>
-              <TabsTrigger
-                value="signup"
-                disabled={!inviteToken && !noAdminExists} // signup tylko z invite lub pierwszy admin
-              >
-                Rejestracja
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="login">
-              <form
-                className="space-y-4"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  handleLogin(loginEmail, loginPassword);
-                }}
-              >
-                <Label>Email</Label>
-                <Input placeholder="twoj@email.pl" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} />
-                <Label>Hasło</Label>
-                <Input placeholder="********" type="password" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} />
-                <Button className="w-full">Zaloguj</Button>
-              </form>
-            </TabsContent>
-
-            <TabsContent value="signup">
-              <form
-                className="space-y-4"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  handleSignup(signupEmail, signupPassword, signupName);
-                }}
-              >
-                <Input placeholder="Imię i nazwisko" value={signupName} onChange={(e) => setSignupName(e.target.value)} />
-                <Input
-                  placeholder="Email"
-                  value={signupEmail}
-                  disabled={!!inviteToken} // nie można zmienić email z invite
-                  onChange={(e) => setSignupEmail(e.target.value)}
-                />
-                <Input type="password" placeholder="Hasło" value={signupPassword} onChange={(e) => setSignupPassword(e.target.value)} />
-                <Button className="w-full">Utwórz konto</Button>
-              </form>
-            </TabsContent>
-          </Tabs>
+          {isSignup ? (
+            <form
+              className="space-y-4"
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleSignup(signupEmail, signupPassword, signupName);
+              }}
+            >
+              <Input
+                placeholder="Imię i nazwisko"
+                value={signupName}
+                onChange={(e) => setSignupName(e.target.value)}
+              />
+              <Input
+                placeholder="Email"
+                value={signupEmail}
+                disabled={!!inviteToken} // invite zablokowane
+                onChange={(e) => setSignupEmail(e.target.value)}
+              />
+              <Input
+                type="password"
+                placeholder="Hasło"
+                value={signupPassword}
+                onChange={(e) => setSignupPassword(e.target.value)}
+              />
+              <Button className="w-full" variant="primary">
+                Utwórz konto
+              </Button>
+            </form>
+          ) : (
+            <form
+              className="space-y-4"
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleLogin(loginEmail, loginPassword);
+              }}
+            >
+              <Label>Email</Label>
+              <Input value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} />
+              <Label>Hasło</Label>
+              <Input
+                type="password"
+                value={loginPassword}
+                onChange={(e) => setLoginPassword(e.target.value)}
+              />
+              <Button className="w-full" variant="primary">
+                Zaloguj
+              </Button>
+            </form>
+          )}
         </CardContent>
       </Card>
     </div>
