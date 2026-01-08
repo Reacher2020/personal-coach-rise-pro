@@ -1,22 +1,33 @@
 import React, { createContext, useContext, useEffect, useState } from "react"
-import type { AuthUser } from "./auth.types"
-import { getSessionUser, clearSessionCache } from "./auth.session"
+
+export type UserRole = "trainer" | "client"
+
+export interface AuthUser {
+  id: string
+  email: string
+  role: UserRole
+}
 
 type AuthContextValue = {
   user: AuthUser | null
   loading: boolean
 }
 
-const AuthContext = createContext<AuthContextValue | null>(null)
+const AuthContext = createContext<AuthContextValue | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    getSessionUser()
-      .then(setUser)
-      .finally(() => setLoading(false))
+    // TEMP: bez supabase – stabilizacja renderu
+    // Supabase wróci w następnym kroku
+    setUser({
+      id: "debug",
+      email: "debug@local",
+      role: "trainer",
+    })
+    setLoading(false)
   }, [])
 
   return (
