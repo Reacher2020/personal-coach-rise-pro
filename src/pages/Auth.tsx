@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -35,7 +35,7 @@ const Auth = () => {
   const [inviteToken, setInviteToken] = useState<string | null>(null);
   const [inviteRole, setInviteRole] = useState<string | null>(null);
   const [inviteValid, setInviteValid] = useState(false);
-  const [defaultTab, setDefaultTab] = useState('login');
+  const [showSignup, setShowSignup] = useState(false);
   const [noAdminExists, setNoAdminExists] = useState(false);
   const [isAdminSetup, setIsAdminSetup] = useState(false);
   const [checkingAdmin, setCheckingAdmin] = useState(true);
@@ -48,7 +48,7 @@ const Auth = () => {
         if (!error) {
           setNoAdminExists(!data);
           if (!data) {
-            setDefaultTab('signup');
+            setShowSignup(true);
           }
         }
       } catch (e) {
@@ -75,7 +75,7 @@ const Auth = () => {
       setInviteRole(invitation.role);
       setInviteValid(true);
       setSignupEmail(invitation.email);
-      setDefaultTab('signup');
+      setShowSignup(true);
     }
   };
 
@@ -295,113 +295,113 @@ const Auth = () => {
         <Card className="border-border shadow-elegant">
           <CardHeader className="pb-4">
             <CardTitle className="text-center text-lg">
-              {noAdminExists && !inviteValid ? 'Konfiguracja systemu' : 'Witaj!'}
+              {showSignup 
+                ? (noAdminExists && !inviteValid 
+                    ? 'Konfiguracja systemu' 
+                    : inviteValid 
+                      ? 'Rejestracja' 
+                      : 'Rejestracja')
+                : 'Witaj!'
+              }
             </CardTitle>
             <CardDescription className="text-center">
-              {noAdminExists && !inviteValid
-                ? 'Utwórz pierwsze konto administratora'
-                : inviteValid 
-                  ? 'Utwórz konto, aby zaakceptować zaproszenie'
-                  : 'Zaloguj się lub utwórz nowe konto'
+              {showSignup
+                ? (noAdminExists && !inviteValid
+                    ? 'Utwórz pierwsze konto administratora'
+                    : inviteValid 
+                      ? 'Utwórz konto, aby zaakceptować zaproszenie'
+                      : 'Utwórz nowe konto')
+                : 'Zaloguj się na swoje konto'
               }
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue={defaultTab} key={`${defaultTab}-${noAdminExists}`} className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-6">
-                <TabsTrigger value="login" disabled={noAdminExists && !inviteValid}>Logowanie</TabsTrigger>
-                <TabsTrigger value="signup">Rejestracja</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="login">
-                <form onSubmit={handleLogin} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="login-email">Email</Label>
-                    <Input
-                      id="login-email"
-                      type="email"
-                      placeholder="twoj@email.com"
-                      value={loginEmail}
-                      onChange={(e) => setLoginEmail(e.target.value)}
-                      required
-                      disabled={isLoading}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="login-password">Hasło</Label>
-                    <Input
-                      id="login-password"
-                      type="password"
-                      placeholder="••••••••"
-                      value={loginPassword}
-                      onChange={(e) => setLoginPassword(e.target.value)}
-                      required
-                      disabled={isLoading}
-                    />
-                  </div>
-                  <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Logowanie...
-                      </>
-                    ) : (
-                      'Zaloguj się'
-                    )}
-                  </Button>
-                </form>
-              </TabsContent>
-              
-              <TabsContent value="signup">
-                <form onSubmit={handleSignup} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-name">Imię i nazwisko</Label>
-                    <Input
-                      id="signup-name"
-                      type="text"
-                      placeholder="Jan Kowalski"
-                      value={signupName}
-                      onChange={(e) => setSignupName(e.target.value)}
-                      disabled={isLoading}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-email">Email</Label>
-                    <Input
-                      id="signup-email"
-                      type="email"
-                      placeholder="twoj@email.com"
-                      value={signupEmail}
-                      onChange={(e) => setSignupEmail(e.target.value)}
-                      required
-                      disabled={isLoading || inviteValid}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-password">Hasło</Label>
-                    <Input
-                      id="signup-password"
-                      type="password"
-                      placeholder="Minimum 6 znaków"
-                      value={signupPassword}
-                      onChange={(e) => setSignupPassword(e.target.value)}
-                      required
-                      disabled={isLoading}
-                    />
-                  </div>
-                  <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        {noAdminExists ? 'Tworzenie administratora...' : 'Tworzenie konta...'}
-                      </>
-                    ) : (
-                      noAdminExists && !inviteValid ? 'Utwórz konto administratora' : 'Utwórz konto'
-                    )}
-                  </Button>
-                </form>
-              </TabsContent>
-            </Tabs>
+            {showSignup ? (
+              <form onSubmit={handleSignup} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="signup-name">Imię i nazwisko</Label>
+                  <Input
+                    id="signup-name"
+                    type="text"
+                    placeholder="Jan Kowalski"
+                    value={signupName}
+                    onChange={(e) => setSignupName(e.target.value)}
+                    disabled={isLoading}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="signup-email">Email</Label>
+                  <Input
+                    id="signup-email"
+                    type="email"
+                    placeholder="twoj@email.com"
+                    value={signupEmail}
+                    onChange={(e) => setSignupEmail(e.target.value)}
+                    required
+                    disabled={isLoading || inviteValid}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="signup-password">Hasło</Label>
+                  <Input
+                    id="signup-password"
+                    type="password"
+                    placeholder="Minimum 6 znaków"
+                    value={signupPassword}
+                    onChange={(e) => setSignupPassword(e.target.value)}
+                    required
+                    disabled={isLoading}
+                  />
+                </div>
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {noAdminExists ? 'Tworzenie administratora...' : 'Tworzenie konta...'}
+                    </>
+                  ) : (
+                    noAdminExists && !inviteValid ? 'Utwórz konto administratora' : 'Utwórz konto'
+                  )}
+                </Button>
+              </form>
+            ) : (
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="login-email">Email</Label>
+                  <Input
+                    id="login-email"
+                    type="email"
+                    placeholder="twoj@email.com"
+                    value={loginEmail}
+                    onChange={(e) => setLoginEmail(e.target.value)}
+                    required
+                    disabled={isLoading}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="login-password">Hasło</Label>
+                  <Input
+                    id="login-password"
+                    type="password"
+                    placeholder="••••••••"
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    required
+                    disabled={isLoading}
+                  />
+                </div>
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Logowanie...
+                    </>
+                  ) : (
+                    'Zaloguj się'
+                  )}
+                </Button>
+              </form>
+            )}
           </CardContent>
         </Card>
       </div>
