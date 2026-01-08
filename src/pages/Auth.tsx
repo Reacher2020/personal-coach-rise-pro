@@ -39,6 +39,7 @@ const Auth = () => {
   const [noAdminExists, setNoAdminExists] = useState(false);
   const [isAdminSetup, setIsAdminSetup] = useState(false);
   const [checkingAdmin, setCheckingAdmin] = useState(true);
+  const [showSignup, setShowSignup] = useState(false);
 
   // Check if any admin exists
   useEffect(() => {
@@ -59,6 +60,13 @@ const Auth = () => {
     };
     checkAdminExists();
   }, []);
+
+  // Update showSignup based on admin/invite state
+  useEffect(() => {
+    if (noAdminExists || inviteValid) {
+      setShowSignup(true);
+    }
+  }, [noAdminExists, inviteValid]);
 
   // Check for invite token in URL
   useEffect(() => {
@@ -245,8 +253,6 @@ const Auth = () => {
     );
   }
 
-  const isSignupMode = noAdminExists || inviteValid || defaultTab === 'signup';
-  const [showSignup, setShowSignup] = useState(isSignupMode);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-slate-100 p-4">
