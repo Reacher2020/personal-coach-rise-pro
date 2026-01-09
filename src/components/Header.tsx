@@ -28,7 +28,7 @@ export const Header = ({ onMenuToggle, isSidebarOpen }: HeaderProps) => {
   };
 
   const getSettingsPath = () => {
-    if (isClient) return '/client/profile';
+    if (isClient) return '/client/settings';
     return '/settings';
   };
 
