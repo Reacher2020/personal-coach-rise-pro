@@ -25,10 +25,11 @@ import {
   Palette, 
   Shield, 
   Camera,
-  Save
+  Save,
+  Settings
 } from "lucide-react";
 
-const Settings = () => {
+export default function AdminSettings() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
@@ -39,28 +40,19 @@ const Settings = () => {
     email: "",
     phone: "",
     bio: "",
-    specialization: "Trening siłowy",
-    experience_years: 0,
   });
 
   const [notifications, setNotifications] = useState({
-    emailNewClient: true,
-    emailSessionReminder: true,
-    emailPayment: true,
-    pushNewMessage: true,
-    pushSessionReminder: true,
-    pushPaymentOverdue: false,
-    smsSessionReminder: false,
-    smsPaymentReminder: true
+    emailNewUser: true,
+    emailSystemAlerts: true,
+    pushNewUser: true,
+    pushSystemAlerts: true,
   });
 
   const [appSettings, setAppSettings] = useState({
     language: "pl",
     theme: "dark",
-    currency: "PLN",
     timeFormat: "24h",
-    sessionDuration: "60",
-    reminderTime: "24"
   });
 
   useEffect(() => {
@@ -69,7 +61,7 @@ const Settings = () => {
 
       const { data } = await supabase
         .from('profiles')
-        .select('full_name, email, phone, bio, specialization, experience_years')
+        .select('full_name, email, phone, bio')
         .eq('user_id', user.id)
         .maybeSingle();
 
@@ -79,35 +71,6 @@ const Settings = () => {
           email: data.email || user.email || "",
           phone: data.phone || "",
           bio: data.bio || "",
-          specialization: data.specialization || "Trening siłowy",
-          experience_years: data.experience_years || 0,
-        });
-      }
-
-      const { data: settingsData } = await supabase
-        .from('coach_settings')
-        .select('*')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (settingsData) {
-        setAppSettings({
-          language: settingsData.language || "pl",
-          theme: settingsData.theme || "dark",
-          currency: settingsData.currency || "PLN",
-          timeFormat: "24h",
-          sessionDuration: String(settingsData.default_session_duration || 60),
-          reminderTime: String(settingsData.reminder_time || 24),
-        });
-        setNotifications({
-          emailNewClient: settingsData.email_notifications ?? true,
-          emailSessionReminder: settingsData.email_notifications ?? true,
-          emailPayment: settingsData.email_notifications ?? true,
-          pushNewMessage: settingsData.push_notifications ?? true,
-          pushSessionReminder: settingsData.push_notifications ?? true,
-          pushPaymentOverdue: false,
-          smsSessionReminder: settingsData.sms_notifications ?? false,
-          smsPaymentReminder: settingsData.sms_notifications ?? true,
         });
       }
 
@@ -127,8 +90,6 @@ const Settings = () => {
         full_name: profile.full_name,
         phone: profile.phone,
         bio: profile.bio,
-        specialization: profile.specialization,
-        experience_years: profile.experience_years,
       })
       .eq('user_id', user.id);
 
@@ -147,62 +108,22 @@ const Settings = () => {
     setSaving(false);
   };
 
-  const handleSaveNotifications = async () => {
-    if (!user) return;
-
-    const { error } = await supabase
-      .from('coach_settings')
-      .update({
-        email_notifications: notifications.emailNewClient,
-        push_notifications: notifications.pushNewMessage,
-        sms_notifications: notifications.smsSessionReminder,
-      })
-      .eq('user_id', user.id);
-
-    if (error) {
-      toast({
-        title: "Błąd",
-        description: "Nie udało się zapisać ustawień.",
-        variant: "destructive",
-      });
-    } else {
-      toast({
-        title: "Ustawienia powiadomień zapisane",
-        description: "Preferencje powiadomień zostały zaktualizowane.",
-      });
-    }
+  const handleSaveNotifications = () => {
+    toast({
+      title: "Ustawienia powiadomień zapisane",
+      description: "Preferencje powiadomień zostały zaktualizowane.",
+    });
   };
 
-  const handleSaveAppSettings = async () => {
-    if (!user) return;
-
-    const { error } = await supabase
-      .from('coach_settings')
-      .update({
-        language: appSettings.language,
-        theme: appSettings.theme,
-        currency: appSettings.currency,
-        default_session_duration: parseInt(appSettings.sessionDuration),
-        reminder_time: parseInt(appSettings.reminderTime),
-      })
-      .eq('user_id', user.id);
-
-    if (error) {
-      toast({
-        title: "Błąd",
-        description: "Nie udało się zapisać ustawień.",
-        variant: "destructive",
-      });
-    } else {
-      toast({
-        title: "Ustawienia aplikacji zapisane",
-        description: "Ustawienia aplikacji zostały zaktualizowane.",
-      });
-    }
+  const handleSaveAppSettings = () => {
+    toast({
+      title: "Ustawienia aplikacji zapisane",
+      description: "Ustawienia aplikacji zostały zaktualizowane.",
+    });
   };
 
   const getInitials = (name: string) => {
-    if (!name) return "T";
+    if (!name) return "A";
     return name
       .split(" ")
       .map((n) => n[0])
@@ -215,8 +136,8 @@ const Settings = () => {
     <DashboardLayout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-foreground">Ustawienia trenera</h1>
-          <p className="text-muted-foreground mt-1">Zarządzaj swoim profilem i preferencjami</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground">Ustawienia administratora</h1>
+          <p className="text-muted-foreground mt-1">Zarządzaj swoim profilem i ustawieniami systemu</p>
         </div>
 
         <Tabs defaultValue="profile" className="space-y-6">
@@ -244,12 +165,12 @@ const Settings = () => {
             <Card className="bg-card border-border">
               <CardHeader>
                 <CardTitle className="text-foreground">Informacje o profilu</CardTitle>
-                <CardDescription>Zaktualizuj swoje dane osobowe i informacje o trenerze</CardDescription>
+                <CardDescription>Zaktualizuj swoje dane osobowe</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="flex items-center gap-4">
                   <Avatar className="h-20 w-20">
-                    <AvatarFallback className="bg-primary/20 text-primary text-xl font-medium">
+                    <AvatarFallback className="bg-red-500/20 text-red-400 text-xl font-medium">
                       {getInitials(profile.full_name)}
                     </AvatarFallback>
                   </Avatar>
@@ -305,37 +226,6 @@ const Settings = () => {
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="specialization">Specjalizacja</Label>
-                    <Select
-                      value={profile.specialization}
-                      onValueChange={(value) => setProfile({ ...profile, specialization: value })}
-                    >
-                      <SelectTrigger className="bg-background border-border">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Trening siłowy">Trening siłowy</SelectItem>
-                        <SelectItem value="Trening funkcjonalny">Trening funkcjonalny</SelectItem>
-                        <SelectItem value="Cardio">Cardio</SelectItem>
-                        <SelectItem value="Rehabilitacja">Rehabilitacja</SelectItem>
-                        <SelectItem value="Dietetyka">Dietetyka</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="experience">Lata doświadczenia</Label>
-                    <Input
-                      id="experience"
-                      type="number"
-                      value={profile.experience_years}
-                      onChange={(e) => setProfile({ ...profile, experience_years: parseInt(e.target.value) || 0 })}
-                      className="bg-background border-border"
-                    />
-                  </div>
-                </div>
-
                 <Button onClick={handleSaveProfile} disabled={saving} className="bg-primary hover:bg-primary/90">
                   <Save className="h-4 w-4 mr-2" />
                   {saving ? "Zapisywanie..." : "Zapisz zmiany"}
@@ -349,39 +239,28 @@ const Settings = () => {
             <Card className="bg-card border-border">
               <CardHeader>
                 <CardTitle className="text-foreground">Powiadomienia email</CardTitle>
-                <CardDescription>Zarządzaj powiadomieniami wysyłanymi na email</CardDescription>
+                <CardDescription>Zarządzaj powiadomieniami systemowymi</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-medium text-foreground">Nowy klient</p>
-                    <p className="text-sm text-muted-foreground">Powiadomienie o nowym kliencie</p>
+                    <p className="font-medium text-foreground">Nowy użytkownik</p>
+                    <p className="text-sm text-muted-foreground">Powiadomienie o nowych rejestracjach</p>
                   </div>
                   <Switch
-                    checked={notifications.emailNewClient}
-                    onCheckedChange={(checked) => setNotifications({ ...notifications, emailNewClient: checked })}
+                    checked={notifications.emailNewUser}
+                    onCheckedChange={(checked) => setNotifications({ ...notifications, emailNewUser: checked })}
                   />
                 </div>
                 <Separator />
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-medium text-foreground">Przypomnienie o sesji</p>
-                    <p className="text-sm text-muted-foreground">Przypomnienie o nadchodzących sesjach</p>
+                    <p className="font-medium text-foreground">Alerty systemowe</p>
+                    <p className="text-sm text-muted-foreground">Ważne powiadomienia o systemie</p>
                   </div>
                   <Switch
-                    checked={notifications.emailSessionReminder}
-                    onCheckedChange={(checked) => setNotifications({ ...notifications, emailSessionReminder: checked })}
-                  />
-                </div>
-                <Separator />
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-foreground">Potwierdzenie płatności</p>
-                    <p className="text-sm text-muted-foreground">Powiadomienie o otrzymanych płatnościach</p>
-                  </div>
-                  <Switch
-                    checked={notifications.emailPayment}
-                    onCheckedChange={(checked) => setNotifications({ ...notifications, emailPayment: checked })}
+                    checked={notifications.emailSystemAlerts}
+                    onCheckedChange={(checked) => setNotifications({ ...notifications, emailSystemAlerts: checked })}
                   />
                 </div>
               </CardContent>
@@ -395,64 +274,23 @@ const Settings = () => {
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-medium text-foreground">Nowa wiadomość</p>
-                    <p className="text-sm text-muted-foreground">Powiadomienie o nowych wiadomościach</p>
+                    <p className="font-medium text-foreground">Nowy użytkownik</p>
+                    <p className="text-sm text-muted-foreground">Push przy nowych rejestracjach</p>
                   </div>
                   <Switch
-                    checked={notifications.pushNewMessage}
-                    onCheckedChange={(checked) => setNotifications({ ...notifications, pushNewMessage: checked })}
+                    checked={notifications.pushNewUser}
+                    onCheckedChange={(checked) => setNotifications({ ...notifications, pushNewUser: checked })}
                   />
                 </div>
                 <Separator />
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-medium text-foreground">Przypomnienie o sesji</p>
-                    <p className="text-sm text-muted-foreground">Push przed nadchodzącą sesją</p>
+                    <p className="font-medium text-foreground">Alerty systemowe</p>
+                    <p className="text-sm text-muted-foreground">Push z alertami systemowymi</p>
                   </div>
                   <Switch
-                    checked={notifications.pushSessionReminder}
-                    onCheckedChange={(checked) => setNotifications({ ...notifications, pushSessionReminder: checked })}
-                  />
-                </div>
-                <Separator />
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-foreground">Zaległa płatność</p>
-                    <p className="text-sm text-muted-foreground">Powiadomienie o zaległych płatnościach</p>
-                  </div>
-                  <Switch
-                    checked={notifications.pushPaymentOverdue}
-                    onCheckedChange={(checked) => setNotifications({ ...notifications, pushPaymentOverdue: checked })}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-card border-border">
-              <CardHeader>
-                <CardTitle className="text-foreground">Powiadomienia SMS</CardTitle>
-                <CardDescription>Zarządzaj powiadomieniami SMS</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-foreground">Przypomnienie o sesji</p>
-                    <p className="text-sm text-muted-foreground">SMS przed nadchodzącą sesją</p>
-                  </div>
-                  <Switch
-                    checked={notifications.smsSessionReminder}
-                    onCheckedChange={(checked) => setNotifications({ ...notifications, smsSessionReminder: checked })}
-                  />
-                </div>
-                <Separator />
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-foreground">Przypomnienie o płatności</p>
-                    <p className="text-sm text-muted-foreground">SMS z przypomnieniem o płatności</p>
-                  </div>
-                  <Switch
-                    checked={notifications.smsPaymentReminder}
-                    onCheckedChange={(checked) => setNotifications({ ...notifications, smsPaymentReminder: checked })}
+                    checked={notifications.pushSystemAlerts}
+                    onCheckedChange={(checked) => setNotifications({ ...notifications, pushSystemAlerts: checked })}
                   />
                 </div>
               </CardContent>
@@ -506,22 +344,6 @@ const Settings = () => {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label>Waluta</Label>
-                    <Select
-                      value={appSettings.currency}
-                      onValueChange={(value) => setAppSettings({ ...appSettings, currency: value })}
-                    >
-                      <SelectTrigger className="bg-background border-border">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="PLN">PLN (zł)</SelectItem>
-                        <SelectItem value="EUR">EUR (€)</SelectItem>
-                        <SelectItem value="USD">USD ($)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
                     <Label>Format czasu</Label>
                     <Select
                       value={appSettings.timeFormat}
@@ -533,52 +355,6 @@ const Settings = () => {
                       <SelectContent>
                         <SelectItem value="24h">24-godzinny</SelectItem>
                         <SelectItem value="12h">12-godzinny</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-card border-border">
-              <CardHeader>
-                <CardTitle className="text-foreground">Ustawienia treningów</CardTitle>
-                <CardDescription>Domyślne ustawienia dla sesji treningowych</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Domyślny czas trwania sesji (min)</Label>
-                    <Select
-                      value={appSettings.sessionDuration}
-                      onValueChange={(value) => setAppSettings({ ...appSettings, sessionDuration: value })}
-                    >
-                      <SelectTrigger className="bg-background border-border">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="30">30 minut</SelectItem>
-                        <SelectItem value="45">45 minut</SelectItem>
-                        <SelectItem value="60">60 minut</SelectItem>
-                        <SelectItem value="90">90 minut</SelectItem>
-                        <SelectItem value="120">120 minut</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Czas przypomnienia przed sesją</Label>
-                    <Select
-                      value={appSettings.reminderTime}
-                      onValueChange={(value) => setAppSettings({ ...appSettings, reminderTime: value })}
-                    >
-                      <SelectTrigger className="bg-background border-border">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="1">1 godzina</SelectItem>
-                        <SelectItem value="2">2 godziny</SelectItem>
-                        <SelectItem value="24">24 godziny</SelectItem>
-                        <SelectItem value="48">48 godzin</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -653,27 +429,9 @@ const Settings = () => {
                 </div>
               </CardContent>
             </Card>
-
-            <Card className="bg-card border-border border-destructive/50">
-              <CardHeader>
-                <CardTitle className="text-destructive">Strefa niebezpieczna</CardTitle>
-                <CardDescription>Nieodwracalne akcje na Twoim koncie</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-foreground">Usuń konto</p>
-                    <p className="text-sm text-muted-foreground">Trwale usuń swoje konto i wszystkie dane</p>
-                  </div>
-                  <Button variant="destructive">Usuń konto</Button>
-                </div>
-              </CardContent>
-            </Card>
           </TabsContent>
         </Tabs>
       </div>
     </DashboardLayout>
   );
-};
-
-export default Settings;
+}

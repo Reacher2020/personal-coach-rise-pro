@@ -19,13 +19,13 @@ import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminUsers from "./pages/admin/AdminUsers";
+import AdminSettings from "./pages/admin/AdminSettings";
 import ClientDashboard from "./pages/client/ClientDashboard";
 import ClientSessions from "./pages/client/ClientSessions";
 import ClientWorkouts from "./pages/client/ClientWorkouts";
 import ClientProgress from "./pages/client/ClientProgress";
 import ClientMessages from "./pages/client/ClientMessages";
-import ClientProfile from "./pages/client/ClientProfile";
-
+import ClientSettings from "./pages/client/ClientSettings";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -51,6 +51,13 @@ const App = () => (
                 <ProtectedRoute>
                   <RoleBasedRoute allowedRoles={['admin']}>
                     <AdminUsers />
+                  </RoleBasedRoute>
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/settings" element={
+                <ProtectedRoute>
+                  <RoleBasedRoute allowedRoles={['admin']}>
+                    <AdminSettings />
                   </RoleBasedRoute>
                 </ProtectedRoute>
               } />
@@ -91,10 +98,10 @@ const App = () => (
                   </RoleBasedRoute>
                 </ProtectedRoute>
               } />
-              <Route path="/client/profile" element={
+              <Route path="/client/settings" element={
                 <ProtectedRoute>
                   <RoleBasedRoute allowedRoles={['client']}>
-                    <ClientProfile />
+                    <ClientSettings />
                   </RoleBasedRoute>
                 </ProtectedRoute>
               } />

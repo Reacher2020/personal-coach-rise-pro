@@ -54,7 +54,7 @@ const clientMenuItems: NavItem[] = [
   { icon: Dumbbell, label: "Moje treningi", path: "/client/workouts" },
   { icon: TrendingUp, label: "Mój postęp", path: "/client/progress" },
   { icon: MessageCircle, label: "Wiadomości", path: "/client/messages" },
-  { icon: User, label: "Mój profil", path: "/client/profile" },
+  { icon: Settings, label: "Ustawienia", path: "/client/settings" },
 ];
 
 // Role-specific branding
