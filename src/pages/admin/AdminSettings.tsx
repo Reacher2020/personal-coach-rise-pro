@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -19,14 +18,13 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { AvatarUpload } from "@/components/AvatarUpload";
 import { 
   User, 
   Bell, 
   Palette, 
   Shield, 
-  Camera,
   Save,
-  Settings
 } from "lucide-react";
 
 export default function AdminSettings() {
@@ -34,6 +32,7 @@ export default function AdminSettings() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   
   const [profile, setProfile] = useState({
     full_name: "",
@@ -61,7 +60,7 @@ export default function AdminSettings() {
 
       const { data } = await supabase
         .from('profiles')
-        .select('full_name, email, phone, bio')
+        .select('full_name, email, phone, bio, avatar_url')
         .eq('user_id', user.id)
         .maybeSingle();
 
@@ -72,6 +71,7 @@ export default function AdminSettings() {
           phone: data.phone || "",
           bio: data.bio || "",
         });
+        setAvatarUrl(data.avatar_url);
       }
 
       setLoading(false);
@@ -132,6 +132,10 @@ export default function AdminSettings() {
       .slice(0, 2);
   };
 
+  const handleAvatarChange = (url: string | null) => {
+    setAvatarUrl(url);
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -168,20 +172,14 @@ export default function AdminSettings() {
                 <CardDescription>Zaktualizuj swoje dane osobowe</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="flex items-center gap-4">
-                  <Avatar className="h-20 w-20">
-                    <AvatarFallback className="bg-red-500/20 text-red-400 text-xl font-medium">
-                      {getInitials(profile.full_name)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <Button variant="outline" className="mb-2">
-                      <Camera className="h-4 w-4 mr-2" />
-                      Zmień zdjęcie
-                    </Button>
-                    <p className="text-sm text-muted-foreground">JPG, PNG lub GIF. Max 2MB.</p>
-                  </div>
-                </div>
+                {user && (
+                  <AvatarUpload
+                    userId={user.id}
+                    currentAvatarUrl={avatarUrl}
+                    fallbackText={getInitials(profile.full_name)}
+                    onAvatarChange={handleAvatarChange}
+                  />
+                )}
 
                 <Separator />
 
