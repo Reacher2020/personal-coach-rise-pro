@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -19,12 +18,12 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { AvatarUpload } from "@/components/AvatarUpload";
 import { 
   User, 
   Bell, 
   Palette, 
   Shield, 
-  Camera,
   Save
 } from "lucide-react";
 
@@ -33,6 +32,7 @@ const Settings = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   
   const [profile, setProfile] = useState({
     full_name: "",
@@ -69,7 +69,7 @@ const Settings = () => {
 
       const { data } = await supabase
         .from('profiles')
-        .select('full_name, email, phone, bio, specialization, experience_years')
+        .select('full_name, email, phone, bio, specialization, experience_years, avatar_url')
         .eq('user_id', user.id)
         .maybeSingle();
 
@@ -82,6 +82,7 @@ const Settings = () => {
           specialization: data.specialization || "Trening siłowy",
           experience_years: data.experience_years || 0,
         });
+        setAvatarUrl(data.avatar_url);
       }
 
       const { data: settingsData } = await supabase
@@ -211,6 +212,10 @@ const Settings = () => {
       .slice(0, 2);
   };
 
+  const handleAvatarChange = (url: string | null) => {
+    setAvatarUrl(url);
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -247,20 +252,14 @@ const Settings = () => {
                 <CardDescription>Zaktualizuj swoje dane osobowe i informacje o trenerze</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="flex items-center gap-4">
-                  <Avatar className="h-20 w-20">
-                    <AvatarFallback className="bg-primary/20 text-primary text-xl font-medium">
-                      {getInitials(profile.full_name)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <Button variant="outline" className="mb-2">
-                      <Camera className="h-4 w-4 mr-2" />
-                      Zmień zdjęcie
-                    </Button>
-                    <p className="text-sm text-muted-foreground">JPG, PNG lub GIF. Max 2MB.</p>
-                  </div>
-                </div>
+                {user && (
+                  <AvatarUpload
+                    userId={user.id}
+                    currentAvatarUrl={avatarUrl}
+                    fallbackText={getInitials(profile.full_name)}
+                    onAvatarChange={handleAvatarChange}
+                  />
+                )}
 
                 <Separator />
 

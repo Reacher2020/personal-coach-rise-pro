@@ -19,12 +19,12 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { AvatarUpload } from "@/components/AvatarUpload";
 import { 
   User, 
   Bell, 
   Palette, 
   Shield, 
-  Camera,
   Save,
   Mail,
   Phone,
@@ -148,6 +148,10 @@ export default function ClientSettings() {
       .slice(0, 2);
   };
 
+  const handleAvatarChange = (url: string | null) => {
+    setProfile(prev => prev ? { ...prev, avatar_url: url } : null);
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -211,13 +215,14 @@ export default function ClientSettings() {
                 <CardDescription>Zaktualizuj swoje dane osobowe</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="flex items-center gap-4">
-                  <Button variant="outline">
-                    <Camera className="h-4 w-4 mr-2" />
-                    Zmień zdjęcie
-                  </Button>
-                  <p className="text-sm text-muted-foreground">JPG, PNG lub GIF. Max 2MB.</p>
-                </div>
+                {user && (
+                  <AvatarUpload
+                    userId={user.id}
+                    currentAvatarUrl={profile?.avatar_url || null}
+                    fallbackText={getInitials(profile?.full_name)}
+                    onAvatarChange={handleAvatarChange}
+                  />
+                )}
 
                 <Separator />
 
