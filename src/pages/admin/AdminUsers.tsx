@@ -3,7 +3,7 @@ import DashboardLayout from '@/components/Coach_Layout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   Table,
   TableBody,
@@ -51,6 +51,7 @@ interface UserWithRole {
   user_id: string;
   full_name: string | null;
   email: string | null;
+  avatar_url: string | null;
   role: 'admin' | 'coach' | 'client';
   created_at: string;
 }
@@ -91,7 +92,7 @@ const AdminUsers = () => {
     // Fetch profiles for these users
     const { data: profilesData, error: profilesError } = await supabase
       .from('profiles')
-      .select('user_id, full_name, email, created_at')
+      .select('user_id, full_name, email, avatar_url, created_at')
       .in('user_id', userIds);
 
     if (profilesError) {
@@ -105,6 +106,7 @@ const AdminUsers = () => {
         user_id: role.user_id,
         full_name: profile?.full_name || null,
         email: profile?.email || null,
+        avatar_url: profile?.avatar_url || null,
         role: role.role,
         created_at: profile?.created_at || role.created_at,
       };
@@ -335,6 +337,9 @@ const AdminUsers = () => {
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <Avatar>
+                            {user.avatar_url && (
+                              <AvatarImage src={user.avatar_url} alt={user.full_name || 'Avatar'} />
+                            )}
                             <AvatarFallback className="bg-primary/20 text-primary">
                               {initials(user.full_name, user.email)}
                             </AvatarFallback>
