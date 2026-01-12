@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      client_workout_plans: {
+        Row: {
+          assigned_at: string
+          client_id: string
+          coach_id: string
+          id: string
+          notes: string | null
+          status: string | null
+          workout_plan_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          client_id: string
+          coach_id: string
+          id?: string
+          notes?: string | null
+          status?: string | null
+          workout_plan_id: string
+        }
+        Update: {
+          assigned_at?: string
+          client_id?: string
+          coach_id?: string
+          id?: string
+          notes?: string | null
+          status?: string | null
+          workout_plan_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_workout_plans_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_workout_plans_workout_plan_id_fkey"
+            columns: ["workout_plan_id"]
+            isOneToOne: false
+            referencedRelation: "workout_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           coach_id: string
@@ -338,6 +383,45 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      workout_plans: {
+        Row: {
+          category: string | null
+          coach_id: string
+          created_at: string
+          description: string | null
+          difficulty: string | null
+          duration_minutes: number | null
+          exercises_count: number | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          coach_id: string
+          created_at?: string
+          description?: string | null
+          difficulty?: string | null
+          duration_minutes?: number | null
+          exercises_count?: number | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          coach_id?: string
+          created_at?: string
+          description?: string | null
+          difficulty?: string | null
+          duration_minutes?: number | null
+          exercises_count?: number | null
+          id?: string
+          name?: string
+          updated_at?: string
         }
         Relationships: []
       }
