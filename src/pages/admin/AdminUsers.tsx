@@ -137,12 +137,7 @@ const AdminUsers = () => {
     setDeleting(true);
 
     try {
-      // First delete from public tables
-      await supabase.from('user_roles').delete().eq('user_id', userToDelete.user_id);
-      await supabase.from('coach_settings').delete().eq('user_id', userToDelete.user_id);
-      await supabase.from('profiles').delete().eq('user_id', userToDelete.user_id);
-
-      // Then delete from auth.users via edge function
+      // Delete from auth.users via edge function - CASCADE will handle all related data
       const { data, error } = await supabase.functions.invoke('delete-user', {
         body: { user_id: userToDelete.user_id }
       });
