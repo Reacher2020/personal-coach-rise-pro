@@ -435,6 +435,16 @@ export type Database = {
         Returns: boolean
       }
       admin_exists: { Args: never; Returns: boolean }
+      get_invitation_by_token: {
+        Args: { invitation_token: string }
+        Returns: {
+          email: string
+          expires_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          status: string
+        }[]
+      }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
