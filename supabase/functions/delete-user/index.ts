@@ -3,11 +3,45 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+};
+
+/**
+ * Optional hardening: set ALLOWED_ORIGINS to a comma-separated list of allowed Origins.
+ * If unset, all origins are allowed (backwards-compatible).
+ */
+const getAllowedOrigins = () =>
+  (Deno.env.get('ALLOWED_ORIGINS') ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+const isOriginAllowed = (origin: string | null) => {
+  const allowed = getAllowedOrigins();
+  if (allowed.length === 0) return true;
+
+  // Allow non-browser callers (no Origin header) even when restricting browser origins.
+  if (!origin) return true;
+
+  return allowed.includes(origin);
 };
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
+    const origin = req.headers.get('Origin');
+    if (!isOriginAllowed(origin)) {
+      return new Response(null, { status: 403, headers: corsHeaders });
+    }
+
     return new Response(null, { headers: corsHeaders });
+  }
+
+  const origin = req.headers.get('Origin');
+  if (!isOriginAllowed(origin)) {
+    return new Response(
+      JSON.stringify({ error: 'Forbidden' }),
+      { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
   }
 
   try {
