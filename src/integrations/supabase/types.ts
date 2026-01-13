@@ -72,6 +72,7 @@ export type Database = {
           progress: number | null
           status: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           coach_id: string
@@ -85,6 +86,7 @@ export type Database = {
           progress?: number | null
           status?: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           coach_id?: string
@@ -98,6 +100,7 @@ export type Database = {
           progress?: number | null
           status?: string
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
