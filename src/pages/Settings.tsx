@@ -19,6 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { AvatarUpload } from "@/components/AvatarUpload";
+import { profileSchema, formatZodErrors } from "@/lib/validationSchemas";
 import { 
   User, 
   Bell, 
@@ -120,16 +121,29 @@ const Settings = () => {
 
   const handleSaveProfile = async () => {
     if (!user) return;
+    
+    // Validate profile data
+    const validationResult = profileSchema.safeParse(profile);
+    if (!validationResult.success) {
+      const errorMessage = formatZodErrors(validationResult.error);
+      toast({
+        title: "Błąd walidacji",
+        description: errorMessage,
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setSaving(true);
 
     const { error } = await supabase
       .from('profiles')
       .update({
-        full_name: profile.full_name,
-        phone: profile.phone,
-        bio: profile.bio,
-        specialization: profile.specialization,
-        experience_years: profile.experience_years,
+        full_name: validationResult.data.full_name || null,
+        phone: validationResult.data.phone || null,
+        bio: validationResult.data.bio || null,
+        specialization: validationResult.data.specialization || null,
+        experience_years: validationResult.data.experience_years || 0,
       })
       .eq('user_id', user.id);
 
