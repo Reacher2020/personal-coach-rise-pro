@@ -3,11 +3,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useToast } from './use-toast';
 import type { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
+import { clientSchema, formatZodErrors } from '@/lib/validationSchemas';
 
 export type Client = Tables<'clients'>;
 export type ClientInsert = TablesInsert<'clients'>;
 export type ClientUpdate = TablesUpdate<'clients'>;
-
 export const useClients = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -45,13 +45,32 @@ export const useClients = () => {
   const addClient = async (client: Omit<ClientInsert, 'coach_id'>) => {
     if (!user) return { error: new Error('Not authenticated') };
 
+    // Validate input
+    const validationResult = clientSchema.safeParse(client);
+    if (!validationResult.success) {
+      const errorMessage = formatZodErrors(validationResult.error);
+      toast({
+        title: 'Błąd walidacji',
+        description: errorMessage,
+        variant: 'destructive',
+      });
+      return { data: null, error: validationResult.error };
+    }
+
     try {
+      const insertData = {
+        name: validationResult.data.name,
+        email: validationResult.data.email || null,
+        phone: validationResult.data.phone || null,
+        notes: validationResult.data.notes || null,
+        status: validationResult.data.status || 'new',
+        progress: validationResult.data.progress || 0,
+        coach_id: user.id,
+      };
+      
       const { data, error } = await supabase
         .from('clients')
-        .insert({
-          ...client,
-          coach_id: user.id,
-        })
+        .insert(insertData)
         .select()
         .single();
 
@@ -60,7 +79,7 @@ export const useClients = () => {
       setClients((prev) => [data, ...prev]);
       toast({
         title: 'Klient dodany',
-        description: `${client.name} został dodany do Twoich klientów`,
+        description: `${validationResult.data.name} został dodany do Twoich klientów`,
       });
       return { data, error: null };
     } catch (error: any) {
@@ -74,10 +93,22 @@ export const useClients = () => {
   };
 
   const updateClient = async (id: string, updates: ClientUpdate) => {
+    // Validate input (partial validation for updates)
+    const validationResult = clientSchema.partial().safeParse(updates);
+    if (!validationResult.success) {
+      const errorMessage = formatZodErrors(validationResult.error);
+      toast({
+        title: 'Błąd walidacji',
+        description: errorMessage,
+        variant: 'destructive',
+      });
+      return { data: null, error: validationResult.error };
+    }
+
     try {
       const { data, error } = await supabase
         .from('clients')
-        .update(updates)
+        .update(validationResult.data)
         .eq('id', id)
         .select()
         .single();

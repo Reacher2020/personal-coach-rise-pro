@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useToast } from './use-toast';
+import { workoutPlanSchema, formatZodErrors } from '@/lib/validationSchemas';
 
 export interface WorkoutPlan {
   id: string;
@@ -95,13 +96,32 @@ export const useWorkoutPlans = () => {
   const addWorkoutPlan = async (plan: WorkoutPlanInsert) => {
     if (!user) return { error: new Error('Not authenticated') };
 
+    // Validate input
+    const validationResult = workoutPlanSchema.safeParse(plan);
+    if (!validationResult.success) {
+      const errorMessage = formatZodErrors(validationResult.error);
+      toast({
+        title: 'Błąd walidacji',
+        description: errorMessage,
+        variant: 'destructive',
+      });
+      return { data: null, error: validationResult.error };
+    }
+
     try {
+      const insertData = {
+        name: validationResult.data.name,
+        description: validationResult.data.description || null,
+        duration_minutes: validationResult.data.duration_minutes || null,
+        difficulty: validationResult.data.difficulty || null,
+        category: validationResult.data.category || null,
+        exercises_count: validationResult.data.exercises_count || null,
+        coach_id: user.id,
+      };
+      
       const { data, error } = await supabase
         .from('workout_plans')
-        .insert({
-          ...plan,
-          coach_id: user.id,
-        })
+        .insert(insertData)
         .select()
         .single();
 
@@ -110,7 +130,7 @@ export const useWorkoutPlans = () => {
       setWorkoutPlans((prev) => [{ ...data, assigned_clients_count: 0 }, ...prev]);
       toast({
         title: 'Plan dodany',
-        description: `${plan.name} został utworzony`,
+        description: `${validationResult.data.name} został utworzony`,
       });
       return { data, error: null };
     } catch (error: any) {
@@ -124,10 +144,22 @@ export const useWorkoutPlans = () => {
   };
 
   const updateWorkoutPlan = async (id: string, updates: Partial<WorkoutPlanInsert>) => {
+    // Validate input (partial validation for updates)
+    const validationResult = workoutPlanSchema.partial().safeParse(updates);
+    if (!validationResult.success) {
+      const errorMessage = formatZodErrors(validationResult.error);
+      toast({
+        title: 'Błąd walidacji',
+        description: errorMessage,
+        variant: 'destructive',
+      });
+      return { data: null, error: validationResult.error };
+    }
+
     try {
       const { data, error } = await supabase
         .from('workout_plans')
-        .update(updates)
+        .update(validationResult.data)
         .eq('id', id)
         .select()
         .single();
