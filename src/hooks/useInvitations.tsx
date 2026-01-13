@@ -108,14 +108,11 @@ export const useInvitations = () => {
 
   const getInvitationByToken = async (token: string) => {
     const { data, error } = await supabase
-      .from('invitations')
-      .select('*')
-      .eq('token', token)
-      .eq('status', 'pending')
-      .gt('expires_at', new Date().toISOString())
-      .maybeSingle();
+      .rpc('get_invitation_by_token', { invitation_token: token });
 
-    return { data: data as Invitation | null, error };
+    // RPC returns array, get first item
+    const invitation = data && data.length > 0 ? data[0] : null;
+    return { data: invitation as Pick<Invitation, 'id' | 'email' | 'role' | 'status' | 'expires_at'> | null, error };
   };
 
   const deleteInvitation = async (id: string) => {
