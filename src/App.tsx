@@ -20,6 +20,7 @@ import NotFound from "./pages/NotFound";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminSettings from "./pages/admin/AdminSettings";
+import AdminMessages from "./pages/admin/AdminMessages";
 import ClientDashboard from "./pages/client/ClientDashboard";
 import ClientSessions from "./pages/client/ClientSessions";
 import ClientWorkouts from "./pages/client/ClientWorkouts";
@@ -58,6 +59,13 @@ const App = () => (
                 <ProtectedRoute>
                   <RoleBasedRoute allowedRoles={['admin']}>
                     <AdminSettings />
+                  </RoleBasedRoute>
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/messages" element={
+                <ProtectedRoute>
+                  <RoleBasedRoute allowedRoles={['admin']}>
+                    <AdminMessages />
                   </RoleBasedRoute>
                 </ProtectedRoute>
               } />
