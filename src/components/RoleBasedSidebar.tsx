@@ -34,6 +34,7 @@ interface NavItem {
 const adminMenuItems: NavItem[] = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/admin" },
   { icon: Users, label: "Użytkownicy", path: "/admin/users" },
+  { icon: MessageCircle, label: "Wiadomości", path: "/admin/messages" },
   { icon: Settings, label: "Ustawienia", path: "/admin/settings" },
 ];
 
