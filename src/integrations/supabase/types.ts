@@ -345,6 +345,35 @@ export type Database = {
         }
         Relationships: []
       }
+      session_reminders: {
+        Row: {
+          id: string
+          reminder_type: string
+          sent_at: string
+          session_id: string
+        }
+        Insert: {
+          id?: string
+          reminder_type: string
+          sent_at?: string
+          session_id: string
+        }
+        Update: {
+          id?: string
+          reminder_type?: string
+          sent_at?: string
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_reminders_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "training_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       training_sessions: {
         Row: {
           client_id: string | null
