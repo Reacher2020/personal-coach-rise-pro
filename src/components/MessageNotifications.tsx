@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,6 +15,7 @@ import { useNavigate } from "react-router-dom";
 import { useUserRole } from "@/hooks/useUserRole";
 import { formatDistanceToNow } from "date-fns";
 import { pl } from "date-fns/locale";
+import { playNotificationSound } from "@/lib/notificationSound";
 
 interface MessageNotification {
   id: string;
@@ -32,6 +33,8 @@ export const MessageNotifications = () => {
   const [notifications, setNotifications] = useState<MessageNotification[]>([]);
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
   const [isOpen, setIsOpen] = useState(false);
+  const previousNotificationIdsRef = useRef<Set<string>>(new Set());
+  const isInitialLoadRef = useRef(true);
 
   useEffect(() => {
     if (!user) return;
@@ -65,6 +68,21 @@ export const MessageNotifications = () => {
         createdAt: msg.created_at,
         read: msg.read,
       }));
+
+      // Check for new notifications and play sound
+      const currentIds = new Set(mappedNotifications.map(n => n.id));
+      const previousIds = previousNotificationIdsRef.current;
+      
+      // Only play sound if this is not the initial load and there are new notifications
+      if (!isInitialLoadRef.current) {
+        const hasNewNotifications = mappedNotifications.some(n => !previousIds.has(n.id));
+        if (hasNewNotifications) {
+          playNotificationSound();
+        }
+      }
+      
+      isInitialLoadRef.current = false;
+      previousNotificationIdsRef.current = currentIds;
 
       setNotifications(mappedNotifications);
     };
