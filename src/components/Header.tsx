@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Menu, X, User, Bell, Settings, LogOut } from "lucide-react";
+import { Menu, X, User, Settings, LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useNavigate } from "react-router-dom";
@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ClientNotifications } from "./ClientNotifications";
-
+import { MessageNotifications } from "./MessageNotifications";
 interface HeaderProps {
   onMenuToggle: () => void;
   isSidebarOpen: boolean;
@@ -59,9 +59,7 @@ export const Header = ({ onMenuToggle, isSidebarOpen }: HeaderProps) => {
         {isClient ? (
           <ClientNotifications />
         ) : (
-          <Button variant="ghost" size="icon" className="relative">
-            <Bell className="h-5 w-5" />
-          </Button>
+          <MessageNotifications />
         )}
         
         <Button variant="ghost" size="icon" onClick={() => navigate(getSettingsPath())}>
