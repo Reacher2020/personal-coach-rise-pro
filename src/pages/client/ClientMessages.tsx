@@ -7,7 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Send, MessageCircle, User } from "lucide-react";
+import { Send, MessageCircle, User, Check, CheckCheck } from "lucide-react";
 import { format, isToday, isYesterday } from "date-fns";
 import { pl } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -37,62 +37,98 @@ export default function ClientMessages() {
   const [clientId, setClientId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const fetchMessages = async () => {
-      if (!user) return;
+  const fetchMessages = async () => {
+    if (!user) return;
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('invited_by')
-        .eq('user_id', user.id)
-        .single();
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('invited_by')
+      .eq('user_id', user.id)
+      .single();
 
-      if (!profile?.invited_by) {
-        setLoading(false);
-        return;
-      }
+    if (!profile?.invited_by) {
+      setLoading(false);
+      return;
+    }
 
-      setCoachId(profile.invited_by);
+    setCoachId(profile.invited_by);
 
-      // Get coach profile
-      const { data: coach } = await supabase
-        .from('profiles')
-        .select('full_name, avatar_url')
-        .eq('user_id', profile.invited_by)
-        .single();
+    // Get coach profile
+    const { data: coach } = await supabase
+      .from('profiles')
+      .select('full_name, avatar_url')
+      .eq('user_id', profile.invited_by)
+      .single();
 
-      if (coach) {
-        setCoachProfile(coach);
-      }
+    if (coach) {
+      setCoachProfile(coach);
+    }
 
-      // Get client ID
-      const { data: clients } = await supabase
-        .from('clients')
-        .select('id')
-        .eq('coach_id', profile.invited_by)
-        .limit(1);
+    // Get client ID
+    const { data: clientRecord } = await supabase
+      .from('clients')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
 
-      if (clients && clients.length > 0) {
-        setClientId(clients[0].id);
+    if (clientRecord) {
+      setClientId(clientRecord.id);
 
-        // Fetch messages
-        const { data: messagesData } = await supabase
-          .from('messages')
-          .select('*')
-          .eq('client_id', clients[0].id)
-          .eq('coach_id', profile.invited_by)
-          .order('created_at', { ascending: true });
+      // Fetch messages
+      const { data: messagesData } = await supabase
+        .from('messages')
+        .select('*')
+        .eq('client_id', clientRecord.id)
+        .order('created_at', { ascending: true });
 
-        if (messagesData) {
-          setMessages(messagesData);
+      if (messagesData) {
+        setMessages(messagesData);
+
+        // Mark unread messages from coach as read
+        const unreadFromCoach = messagesData
+          .filter(m => m.is_from_coach && !m.read)
+          .map(m => m.id);
+
+        if (unreadFromCoach.length > 0) {
+          await supabase
+            .from('messages')
+            .update({ read: true })
+            .in('id', unreadFromCoach);
         }
       }
+    }
 
-      setLoading(false);
-    };
+    setLoading(false);
+  };
 
+  useEffect(() => {
     fetchMessages();
   }, [user]);
+
+  // Realtime subscription
+  useEffect(() => {
+    if (!clientId) return;
+
+    const channel = supabase
+      .channel('client-messages')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'messages',
+          filter: `client_id=eq.${clientId}`,
+        },
+        () => {
+          fetchMessages();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [clientId]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -116,12 +152,37 @@ export default function ClientMessages() {
 
     setSending(true);
 
-    // Note: Messages from client need different handling - 
-    // For now we show a message that this feature needs backend support
-    toast.info("Wysyłanie wiadomości wymaga konfiguracji po stronie trenera");
-    
-    setSending(false);
-    setNewMessage("");
+    try {
+      const { error } = await supabase
+        .from('messages')
+        .insert({
+          client_id: clientId,
+          coach_id: coachId,
+          content: newMessage.trim(),
+          is_from_coach: false,
+          read: false,
+        });
+
+      if (error) {
+        console.error('Error sending message:', error);
+        toast.error("Nie udało się wysłać wiadomości");
+      } else {
+        setNewMessage("");
+        toast.success("Wiadomość wysłana");
+      }
+    } catch (error) {
+      console.error('Error sending message:', error);
+      toast.error("Nie udało się wysłać wiadomości");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage(e as any);
+    }
   };
 
   return (
@@ -187,16 +248,28 @@ export default function ClientMessages() {
                       )}
                     >
                       <p className="text-sm">{message.content}</p>
-                      <p
-                        className={cn(
-                          "text-xs mt-1",
-                          message.is_from_coach
-                            ? "text-muted-foreground"
-                            : "text-primary-foreground/70"
+                      <div className={cn(
+                        "flex items-center gap-1 mt-1",
+                        message.is_from_coach ? "justify-start" : "justify-end"
+                      )}>
+                        <span
+                          className={cn(
+                            "text-xs",
+                            message.is_from_coach
+                              ? "text-muted-foreground"
+                              : "text-primary-foreground/70"
+                          )}
+                        >
+                          {formatMessageDate(message.created_at)}
+                        </span>
+                        {!message.is_from_coach && (
+                          message.read ? (
+                            <CheckCheck className="h-3 w-3 text-primary-foreground/70" />
+                          ) : (
+                            <Check className="h-3 w-3 text-primary-foreground/70" />
+                          )
                         )}
-                      >
-                        {formatMessageDate(message.created_at)}
-                      </p>
+                      </div>
                     </div>
                   </div>
                 ))
@@ -210,6 +283,7 @@ export default function ClientMessages() {
                 <Input
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
+                  onKeyPress={handleKeyPress}
                   placeholder="Napisz wiadomość..."
                   disabled={sending}
                   className="flex-1"

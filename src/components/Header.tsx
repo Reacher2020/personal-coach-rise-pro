@@ -56,11 +56,8 @@ export const Header = ({ onMenuToggle, isSidebarOpen }: HeaderProps) => {
       </div>
 
       <div className="flex items-center gap-2">
-        {isClient ? (
-          <ClientNotifications />
-        ) : (
-          <MessageNotifications />
-        )}
+        {isClient && <ClientNotifications />}
+        <MessageNotifications />
         
         <Button variant="ghost" size="icon" onClick={() => navigate(getSettingsPath())}>
           <Settings className="h-5 w-5" />
