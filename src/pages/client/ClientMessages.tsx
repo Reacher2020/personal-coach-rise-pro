@@ -7,7 +7,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Send, MessageCircle, User, Check, CheckCheck } from "lucide-react";
+import { useMessageAttachments } from "@/hooks/useMessageAttachments";
+import { MessageAttachment, AttachmentPreview } from "@/components/MessageAttachment";
+import { Send, MessageCircle, User, Check, CheckCheck, Paperclip, Loader2 } from "lucide-react";
 import { format, isToday, isYesterday } from "date-fns";
 import { pl } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -19,6 +21,9 @@ interface Message {
   is_from_coach: boolean;
   created_at: string;
   read: boolean;
+  attachment_url: string | null;
+  attachment_name: string | null;
+  attachment_type: string | null;
 }
 
 interface CoachProfile {
@@ -28,6 +33,7 @@ interface CoachProfile {
 
 export default function ClientMessages() {
   const { user } = useAuth();
+  const { uploadAttachment, uploading } = useMessageAttachments();
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
@@ -35,7 +41,10 @@ export default function ClientMessages() {
   const [coachProfile, setCoachProfile] = useState<CoachProfile | null>(null);
   const [coachId, setCoachId] = useState<string | null>(null);
   const [clientId, setClientId] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [filePreview, setFilePreview] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchMessages = async () => {
     if (!user) return;
@@ -134,6 +143,15 @@ export default function ClientMessages() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // Cleanup file preview URL
+  useEffect(() => {
+    return () => {
+      if (filePreview) {
+        URL.revokeObjectURL(filePreview);
+      }
+    };
+  }, [filePreview]);
+
   const formatMessageDate = (dateStr: string) => {
     const date = new Date(dateStr);
     if (isToday(date)) {
@@ -145,22 +163,60 @@ export default function ClientMessages() {
     return format(date, "d MMM, HH:mm", { locale: pl });
   };
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      if (file.type.startsWith('image/')) {
+        setFilePreview(URL.createObjectURL(file));
+      } else {
+        setFilePreview(null);
+      }
+    }
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const removeSelectedFile = () => {
+    if (filePreview) {
+      URL.revokeObjectURL(filePreview);
+    }
+    setSelectedFile(null);
+    setFilePreview(null);
+  };
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!newMessage.trim() || !coachId || !clientId) return;
+    if ((!newMessage.trim() && !selectedFile) || !coachId || !clientId) return;
 
     setSending(true);
 
     try {
+      let attachmentData = null;
+
+      // Upload attachment if present
+      if (selectedFile) {
+        attachmentData = await uploadAttachment(selectedFile);
+        if (!attachmentData && !newMessage.trim()) {
+          setSending(false);
+          return;
+        }
+      }
+
       const { error } = await supabase
         .from('messages')
         .insert({
           client_id: clientId,
           coach_id: coachId,
-          content: newMessage.trim(),
+          content: newMessage.trim() || (attachmentData ? `📎 ${attachmentData.name}` : ''),
           is_from_coach: false,
           read: false,
+          attachment_url: attachmentData?.url || null,
+          attachment_name: attachmentData?.name || null,
+          attachment_type: attachmentData?.type || null,
         });
 
       if (error) {
@@ -168,6 +224,7 @@ export default function ClientMessages() {
         toast.error("Nie udało się wysłać wiadomości");
       } else {
         setNewMessage("");
+        removeSelectedFile();
         toast.success("Wiadomość wysłana");
       }
     } catch (error) {
@@ -247,7 +304,19 @@ export default function ClientMessages() {
                           : "bg-primary text-primary-foreground rounded-br-md"
                       )}
                     >
-                      <p className="text-sm">{message.content}</p>
+                      {message.attachment_url && message.attachment_name && message.attachment_type && (
+                        <div className="mb-2">
+                          <MessageAttachment
+                            url={message.attachment_url}
+                            name={message.attachment_name}
+                            type={message.attachment_type}
+                            isOwn={!message.is_from_coach}
+                          />
+                        </div>
+                      )}
+                      {message.content && !message.content.startsWith('📎') && (
+                        <p className="text-sm">{message.content}</p>
+                      )}
                       <div className={cn(
                         "flex items-center gap-1 mt-1",
                         message.is_from_coach ? "justify-start" : "justify-end"
@@ -277,19 +346,53 @@ export default function ClientMessages() {
               <div ref={messagesEndRef} />
             </CardContent>
 
+            {/* Attachment Preview */}
+            {selectedFile && (
+              <div className="px-4 py-2 border-t bg-muted/30">
+                <AttachmentPreview
+                  file={selectedFile}
+                  previewUrl={filePreview || undefined}
+                  onRemove={removeSelectedFile}
+                />
+              </div>
+            )}
+
             {/* Message Input */}
             <div className="p-4 border-t">
-              <form onSubmit={handleSendMessage} className="flex gap-2">
+              <form onSubmit={handleSendMessage} className="flex items-center gap-2">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileSelect}
+                  className="hidden"
+                  accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
+                />
+                <Button 
+                  type="button" 
+                  variant="ghost" 
+                  size="icon"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading || sending}
+                >
+                  <Paperclip className="h-5 w-5" />
+                </Button>
                 <Input
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                   onKeyPress={handleKeyPress}
                   placeholder="Napisz wiadomość..."
-                  disabled={sending}
+                  disabled={sending || uploading}
                   className="flex-1"
                 />
-                <Button type="submit" disabled={sending || !newMessage.trim()}>
-                  <Send className="h-4 w-4" />
+                <Button 
+                  type="submit" 
+                  disabled={sending || uploading || (!newMessage.trim() && !selectedFile)}
+                >
+                  {sending || uploading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}
                 </Button>
               </form>
             </div>
