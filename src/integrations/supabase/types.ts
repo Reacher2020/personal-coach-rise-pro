@@ -214,6 +214,9 @@ export type Database = {
       }
       messages: {
         Row: {
+          attachment_name: string | null
+          attachment_type: string | null
+          attachment_url: string | null
           client_id: string
           coach_id: string
           content: string
@@ -223,6 +226,9 @@ export type Database = {
           read: boolean
         }
         Insert: {
+          attachment_name?: string | null
+          attachment_type?: string | null
+          attachment_url?: string | null
           client_id: string
           coach_id: string
           content: string
@@ -232,6 +238,9 @@ export type Database = {
           read?: boolean
         }
         Update: {
+          attachment_name?: string | null
+          attachment_type?: string | null
+          attachment_url?: string | null
           client_id?: string
           coach_id?: string
           content?: string
