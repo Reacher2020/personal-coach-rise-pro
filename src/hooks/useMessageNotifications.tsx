@@ -27,30 +27,33 @@ export const useMessageNotifications = () => {
     if (!user) return;
 
     try {
+      setLoading(true);
       const allNotifications: MessageNotification[] = [];
 
       // Fetch admin/coach messages for admins and coaches
       if (isAdmin || isCoach) {
         const { data: adminMessages, error: adminError } = await supabase
           .from('admin_messages')
-          .select(`
-            id,
-            content,
-            created_at,
-            read,
-            sender_id,
-            profiles!admin_messages_sender_id_fkey(full_name)
-          `)
+          .select('id, content, created_at, read, sender_id')
           .eq('recipient_id', user.id)
           .eq('read', false)
           .order('created_at', { ascending: false })
           .limit(10);
 
         if (!adminError && adminMessages) {
-          const mapped = adminMessages.map((msg: any) => ({
+          // Fetch sender profiles separately
+          const senderIds = [...new Set(adminMessages.map(msg => msg.sender_id))];
+          const { data: profiles } = await supabase
+            .from('profiles')
+            .select('user_id, full_name')
+            .in('user_id', senderIds);
+
+          const profileMap = new Map(profiles?.map(p => [p.user_id, p.full_name]) || []);
+
+          const mapped = adminMessages.map((msg) => ({
             id: msg.id,
             senderId: msg.sender_id,
-            senderName: msg.profiles?.full_name || 'Nieznany użytkownik',
+            senderName: profileMap.get(msg.sender_id) || 'Nieznany użytkownik',
             content: msg.content,
             createdAt: msg.created_at,
             read: msg.read,
@@ -64,15 +67,7 @@ export const useMessageNotifications = () => {
       if (isCoach) {
         const { data: clientMessages, error: clientError } = await supabase
           .from('messages')
-          .select(`
-            id,
-            content,
-            created_at,
-            read,
-            is_from_coach,
-            client_id,
-            clients!inner(name)
-          `)
+          .select('id, content, created_at, read, is_from_coach, client_id')
           .eq('coach_id', user.id)
           .eq('is_from_coach', false)
           .eq('read', false)
@@ -80,10 +75,19 @@ export const useMessageNotifications = () => {
           .limit(10);
 
         if (!clientError && clientMessages) {
-          const mapped = clientMessages.map((msg: any) => ({
+          // Fetch client names separately
+          const clientIds = [...new Set(clientMessages.map(msg => msg.client_id))];
+          const { data: clients } = await supabase
+            .from('clients')
+            .select('id, name')
+            .in('id', clientIds);
+
+          const clientMap = new Map(clients?.map(c => [c.id, c.name]) || []);
+
+          const mapped = clientMessages.map((msg) => ({
             id: msg.id,
             senderId: msg.client_id,
-            senderName: msg.clients?.name || 'Klient',
+            senderName: clientMap.get(msg.client_id) || 'Klient',
             content: msg.content,
             createdAt: msg.created_at,
             read: msg.read,
@@ -96,51 +100,43 @@ export const useMessageNotifications = () => {
 
       // Fetch messages from coach for clients
       if (isClient) {
-        // First get the client's profile to find their coach
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('invited_by')
+        // Get client record
+        const { data: clientRecord } = await supabase
+          .from('clients')
+          .select('id, coach_id')
           .eq('user_id', user.id)
           .single();
 
-        if (profile?.invited_by) {
-          // Get client record
-          const { data: clientRecord } = await supabase
-            .from('clients')
-            .select('id')
-            .eq('user_id', user.id)
-            .single();
+        if (clientRecord) {
+          const { data: coachMessages, error: coachError } = await supabase
+            .from('messages')
+            .select('id, content, created_at, read, is_from_coach, coach_id')
+            .eq('client_id', clientRecord.id)
+            .eq('is_from_coach', true)
+            .eq('read', false)
+            .order('created_at', { ascending: false })
+            .limit(10);
 
-          if (clientRecord) {
-            const { data: coachMessages, error: coachError } = await supabase
-              .from('messages')
-              .select(`
-                id,
-                content,
-                created_at,
-                read,
-                is_from_coach,
-                coach_id,
-                profiles!messages_coach_id_fkey(full_name)
-              `)
-              .eq('client_id', clientRecord.id)
-              .eq('is_from_coach', true)
-              .eq('read', false)
-              .order('created_at', { ascending: false })
-              .limit(10);
+          if (!coachError && coachMessages) {
+            // Fetch coach profile separately
+            const coachIds = [...new Set(coachMessages.map(msg => msg.coach_id))];
+            const { data: profiles } = await supabase
+              .from('profiles')
+              .select('user_id, full_name')
+              .in('user_id', coachIds);
 
-            if (!coachError && coachMessages) {
-              const mapped = coachMessages.map((msg: any) => ({
-                id: msg.id,
-                senderId: msg.coach_id,
-                senderName: msg.profiles?.full_name || 'Trener',
-                content: msg.content,
-                createdAt: msg.created_at,
-                read: msg.read,
-                type: 'client' as const,
-              }));
-              allNotifications.push(...mapped);
-            }
+            const profileMap = new Map(profiles?.map(p => [p.user_id, p.full_name]) || []);
+
+            const mapped = coachMessages.map((msg) => ({
+              id: msg.id,
+              senderId: msg.coach_id,
+              senderName: profileMap.get(msg.coach_id) || 'Trener',
+              content: msg.content,
+              createdAt: msg.created_at,
+              read: msg.read,
+              type: 'client' as const,
+            }));
+            allNotifications.push(...mapped);
           }
         }
       }
