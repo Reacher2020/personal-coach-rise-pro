@@ -30,7 +30,7 @@ export const Header = ({ onMenuToggle, isSidebarOpen }: HeaderProps) => {
   const getSettingsPath = () => {
     if (isAdmin) return '/admin/settings';
     if (isClient) return '/client/settings';
-    return '/settings'; // coach
+    return '/coach/settings';
   };
 
   return (
