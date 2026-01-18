@@ -27,7 +27,7 @@ export const RoleBasedRoute = ({
     if (role === 'admin') {
       return <Navigate to="/admin" replace />;
     } else if (role === 'coach') {
-      return <Navigate to="/" replace />;
+      return <Navigate to="/coach" replace />;
     } else if (role === 'client') {
       return <Navigate to="/client" replace />;
     }

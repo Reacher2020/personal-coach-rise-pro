@@ -22,42 +22,42 @@ const menuItems = [
   {
     icon: LayoutDashboard,
     label: "Dashboard",
-    path: "/"
+    path: "/coach"
   },
   {
     icon: Users,
     label: "Klienci",
-    path: "/clients"
+    path: "/coach/clients"
   },
   {
     icon: Calendar,
     label: "Kalendarz",
-    path: "/calendar"
+    path: "/coach/calendar"
   },
   {
     icon: Dumbbell,
     label: "Plany treningowe",
-    path: "/workouts"
+    path: "/coach/workouts"
   },
   {
     icon: TrendingUp,
     label: "Postępy",
-    path: "/progress"
+    path: "/coach/progress"
   },
   {
     icon: CreditCard,
     label: "Płatności",
-    path: "/payments"
+    path: "/coach/payments"
   },
   {
     icon: MessageCircle,
     label: "Wiadomości",
-    path: "/messages"
+    path: "/coach/messages"
   },
   {
     icon: Settings,
     label: "Ustawienia",
-    path: "/settings"
+    path: "/coach/settings"
   }
 ];
 

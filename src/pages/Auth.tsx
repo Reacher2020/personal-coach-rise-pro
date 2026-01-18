@@ -145,7 +145,7 @@ const Auth = () => {
     if (role === 'admin') {
       navigate('/admin', { replace: true });
     } else if (role === 'coach') {
-      navigate('/', { replace: true });
+      navigate('/coach', { replace: true });
     } else if (role === 'client') {
       navigate('/client', { replace: true });
     } else {

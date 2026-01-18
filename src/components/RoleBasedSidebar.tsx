@@ -14,9 +14,7 @@ import {
   X,
   Shield,
   UserCog,
-  User,
-  FileText,
-  Bell
+  User
 } from "lucide-react";
 
 interface RoleBasedSidebarProps {
@@ -39,14 +37,14 @@ const adminMenuItems: NavItem[] = [
 ];
 
 const coachMenuItems: NavItem[] = [
-  { icon: LayoutDashboard, label: "Dashboard", path: "/" },
-  { icon: Users, label: "Klienci", path: "/clients" },
-  { icon: Calendar, label: "Kalendarz", path: "/calendar" },
-  { icon: Dumbbell, label: "Plany treningowe", path: "/workouts" },
-  { icon: TrendingUp, label: "Postępy", path: "/progress" },
-  { icon: CreditCard, label: "Płatności", path: "/payments" },
-  { icon: MessageCircle, label: "Wiadomości", path: "/messages" },
-  { icon: Settings, label: "Ustawienia", path: "/settings" },
+  { icon: LayoutDashboard, label: "Dashboard", path: "/coach" },
+  { icon: Users, label: "Klienci", path: "/coach/clients" },
+  { icon: Calendar, label: "Kalendarz", path: "/coach/calendar" },
+  { icon: Dumbbell, label: "Plany treningowe", path: "/coach/workouts" },
+  { icon: TrendingUp, label: "Postępy", path: "/coach/progress" },
+  { icon: CreditCard, label: "Płatności", path: "/coach/payments" },
+  { icon: MessageCircle, label: "Wiadomości", path: "/coach/messages" },
+  { icon: Settings, label: "Ustawienia", path: "/coach/settings" },
 ];
 
 const clientMenuItems: NavItem[] = [
@@ -158,7 +156,7 @@ export const RoleBasedSidebar = ({ isOpen, onClose }: RoleBasedSidebarProps) => 
               key={item.path}
               to={item.path}
               onClick={onClose}
-              end={item.path === "/" || item.path === "/admin" || item.path === "/client"}
+              end={item.path === "/coach" || item.path === "/admin" || item.path === "/client"}
               className={({ isActive }) =>
                 cn(
                   "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200",
@@ -180,7 +178,7 @@ export const RoleBasedSidebar = ({ isOpen, onClose }: RoleBasedSidebarProps) => 
             <div className="flex gap-2">
               {isCoach && (
                 <NavLink 
-                  to="/clients" 
+                  to="/coach/clients" 
                   className="flex-1 text-xs text-center py-2 rounded bg-muted hover:bg-muted/80 transition-colors"
                 >
                   +Klient
