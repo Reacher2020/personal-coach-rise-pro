@@ -10,14 +10,10 @@ interface Invitation {
   email: string;
   role: InvitationRole;
   status: string;
+  token: string;
   expires_at: string;
   created_at: string;
   accepted_at: string | null;
-}
-
-// Extended invitation with token - only used when creating new invitations
-interface InvitationWithToken extends Invitation {
-  token: string;
 }
 
 export const useInvitations = () => {
@@ -30,7 +26,6 @@ export const useInvitations = () => {
     
     setLoading(true);
     try {
-      // When creating, we need the token to share with the invitee
       const { data, error } = await supabase
         .from('invitations')
         .insert({
@@ -38,7 +33,7 @@ export const useInvitations = () => {
           role,
           invited_by: user.id,
         })
-        .select('id, email, role, status, token, expires_at, created_at, accepted_at')
+        .select()
         .single();
 
       if (error) throw error;
@@ -48,7 +43,7 @@ export const useInvitations = () => {
         description: `Zaproszenie zostało utworzone dla ${email}`,
       });
 
-      return { data: data as InvitationWithToken, error: null };
+      return { data, error: null };
     } catch (error: any) {
       toast({
         title: 'Błąd',
@@ -61,24 +56,22 @@ export const useInvitations = () => {
     }
   };
 
-  // List invitations WITHOUT tokens for security (tokens not needed for listing)
   const getMyInvitations = async () => {
     if (!user) return { data: null, error: new Error('Not authenticated') };
 
     const { data, error } = await supabase
       .from('invitations')
-      .select('id, email, role, status, expires_at, created_at, accepted_at')
+      .select('*')
       .eq('invited_by', user.id)
       .order('created_at', { ascending: false });
 
     return { data: data as Invitation[] | null, error };
   };
 
-  // List all invitations WITHOUT tokens for security
   const getAllInvitations = async () => {
     const { data, error } = await supabase
       .from('invitations')
-      .select('id, email, role, status, expires_at, created_at, accepted_at')
+      .select('*')
       .order('created_at', { ascending: false });
 
     return { data: data as Invitation[] | null, error };
