@@ -1,8 +1,6 @@
-import { FileText, Image, Film, Music, File, Download, X, Loader2 } from "lucide-react";
+import { FileText, Image, Film, Music, File, Download, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useState, useEffect } from "react";
-import { getSignedAttachmentUrl } from "@/hooks/useMessageAttachments";
 
 interface MessageAttachmentProps {
   url: string;
@@ -21,22 +19,9 @@ export const MessageAttachment = ({
   onRemove,
   showRemove = false,
 }: MessageAttachmentProps) => {
-  const [signedUrl, setSignedUrl] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-
   const isImage = type.startsWith('image/');
   const isVideo = type.startsWith('video/');
   const isAudio = type.startsWith('audio/');
-
-  useEffect(() => {
-    const loadSignedUrl = async () => {
-      setLoading(true);
-      const signed = await getSignedAttachmentUrl(url);
-      setSignedUrl(signed);
-      setLoading(false);
-    };
-    loadSignedUrl();
-  }, [url]);
 
   const getIcon = () => {
     if (isImage) return <Image className="h-4 w-4" />;
@@ -47,37 +32,8 @@ export const MessageAttachment = ({
   };
 
   const handleDownload = () => {
-    if (signedUrl) {
-      window.open(signedUrl, '_blank');
-    }
+    window.open(url, '_blank');
   };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center p-4">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-
-  if (!signedUrl) {
-    return (
-      <div className={cn(
-        "flex items-center gap-2 p-2 rounded-lg border",
-        isOwn ? "bg-primary-foreground/10 border-primary-foreground/20" : "bg-muted/50 border-border"
-      )}>
-        <div className={cn("p-2 rounded", isOwn ? "bg-primary-foreground/20" : "bg-muted")}>
-          {getIcon()}
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className={cn("text-sm font-medium truncate", isOwn ? "text-primary-foreground" : "text-foreground")}>
-            {name}
-          </p>
-          <p className="text-xs text-muted-foreground">Nie można załadować pliku</p>
-        </div>
-      </div>
-    );
-  }
 
   if (isImage) {
     return (
@@ -92,9 +48,9 @@ export const MessageAttachment = ({
             <X className="h-3 w-3" />
           </Button>
         )}
-        <a href={signedUrl} target="_blank" rel="noopener noreferrer">
+        <a href={url} target="_blank" rel="noopener noreferrer">
           <img
-            src={signedUrl}
+            src={url}
             alt={name}
             className="max-w-[250px] max-h-[200px] rounded-lg object-cover cursor-pointer hover:opacity-90 transition-opacity"
           />
@@ -117,7 +73,7 @@ export const MessageAttachment = ({
           </Button>
         )}
         <video
-          src={signedUrl}
+          src={url}
           controls
           className="max-w-[250px] max-h-[200px] rounded-lg"
         />

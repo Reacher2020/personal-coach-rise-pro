@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -8,30 +8,6 @@ export interface AttachmentData {
   name: string;
   type: string;
 }
-
-// Helper to get signed URL for private bucket attachments
-export const getSignedAttachmentUrl = async (filePath: string): Promise<string | null> => {
-  // If it's already a full URL (legacy public URLs), return as-is
-  if (filePath.startsWith('http')) {
-    return filePath;
-  }
-  
-  try {
-    const { data, error } = await supabase.storage
-      .from('message-attachments')
-      .createSignedUrl(filePath, 3600); // 1 hour expiry
-    
-    if (error) {
-      console.error('Error getting signed URL:', error);
-      return null;
-    }
-    
-    return data.signedUrl;
-  } catch (error) {
-    console.error('Error getting signed URL:', error);
-    return null;
-  }
-};
 
 export const useMessageAttachments = () => {
   const { user } = useAuth();
@@ -67,9 +43,12 @@ export const useMessageAttachments = () => {
         return null;
       }
 
-      // Store the path instead of public URL - we'll generate signed URLs when displaying
+      const { data: { publicUrl } } = supabase.storage
+        .from('message-attachments')
+        .getPublicUrl(filePath);
+
       return {
-        url: filePath,
+        url: publicUrl,
         name: file.name,
         type: file.type,
       };
@@ -101,6 +80,5 @@ export const useMessageAttachments = () => {
     uploading,
     isImageType,
     getFileIcon,
-    getSignedAttachmentUrl,
   };
 };
