@@ -7,33 +7,26 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { UserRoleProvider } from "@/hooks/useUserRole";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { RoleBasedRoute } from "@/components/RoleBasedRoute";
+import Index from "./pages/Index";
+import Clients from "./pages/Clients";
+import CalendarPage from "./pages/Calendar";
+import Workouts from "./pages/Workouts";
+import Progress from "./pages/Progress";
+import Payments from "./pages/Payments";
+import Messages from "./pages/Messages";
+import Settings from "./pages/Settings";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
-
-// Admin pages
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminMessages from "./pages/admin/AdminMessages";
-
-// Coach pages
-import CoachDashboard from "./pages/coach/CoachDashboard";
-import CoachClients from "./pages/coach/CoachClients";
-import CoachCalendar from "./pages/coach/CoachCalendar";
-import CoachWorkouts from "./pages/coach/CoachWorkouts";
-import CoachProgress from "./pages/coach/CoachProgress";
-import CoachPayments from "./pages/coach/CoachPayments";
-import CoachMessages from "./pages/coach/CoachMessages";
-import CoachSettings from "./pages/coach/CoachSettings";
-
-// Client pages
 import ClientDashboard from "./pages/client/ClientDashboard";
 import ClientSessions from "./pages/client/ClientSessions";
 import ClientWorkouts from "./pages/client/ClientWorkouts";
 import ClientProgress from "./pages/client/ClientProgress";
 import ClientMessages from "./pages/client/ClientMessages";
 import ClientSettings from "./pages/client/ClientSettings";
-
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -122,59 +115,59 @@ const App = () => (
               } />
               
               {/* Coach Routes */}
-              <Route path="/coach" element={
+              <Route path="/" element={
                 <ProtectedRoute>
                   <RoleBasedRoute allowedRoles={['coach']}>
-                    <CoachDashboard />
+                    <Index />
                   </RoleBasedRoute>
                 </ProtectedRoute>
               } />
-              <Route path="/coach/clients" element={
+              <Route path="/clients" element={
                 <ProtectedRoute>
                   <RoleBasedRoute allowedRoles={['coach']}>
-                    <CoachClients />
+                    <Clients />
                   </RoleBasedRoute>
                 </ProtectedRoute>
               } />
-              <Route path="/coach/calendar" element={
+              <Route path="/calendar" element={
                 <ProtectedRoute>
                   <RoleBasedRoute allowedRoles={['coach']}>
-                    <CoachCalendar />
+                    <CalendarPage />
                   </RoleBasedRoute>
                 </ProtectedRoute>
               } />
-              <Route path="/coach/workouts" element={
+              <Route path="/workouts" element={
                 <ProtectedRoute>
                   <RoleBasedRoute allowedRoles={['coach']}>
-                    <CoachWorkouts />
+                    <Workouts />
                   </RoleBasedRoute>
                 </ProtectedRoute>
               } />
-              <Route path="/coach/progress" element={
+              <Route path="/progress" element={
                 <ProtectedRoute>
                   <RoleBasedRoute allowedRoles={['coach']}>
-                    <CoachProgress />
+                    <Progress />
                   </RoleBasedRoute>
                 </ProtectedRoute>
               } />
-              <Route path="/coach/payments" element={
+              <Route path="/payments" element={
                 <ProtectedRoute>
                   <RoleBasedRoute allowedRoles={['coach']}>
-                    <CoachPayments />
+                    <Payments />
                   </RoleBasedRoute>
                 </ProtectedRoute>
               } />
-              <Route path="/coach/messages" element={
+              <Route path="/messages" element={
                 <ProtectedRoute>
                   <RoleBasedRoute allowedRoles={['coach']}>
-                    <CoachMessages />
+                    <Messages />
                   </RoleBasedRoute>
                 </ProtectedRoute>
               } />
-              <Route path="/coach/settings" element={
+              <Route path="/settings" element={
                 <ProtectedRoute>
                   <RoleBasedRoute allowedRoles={['coach']}>
-                    <CoachSettings />
+                    <Settings />
                   </RoleBasedRoute>
                 </ProtectedRoute>
               } />

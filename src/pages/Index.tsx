@@ -270,7 +270,7 @@ const Index = () => {
                   <Button 
                     variant="outline" 
                     className="mt-4"
-                    onClick={() => navigate('/coach/calendar')}
+                    onClick={() => navigate('/calendar')}
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     Zaplanuj sesję
@@ -310,7 +310,7 @@ const Index = () => {
               <CardTitle className="text-foreground">
                 Najnowsi klienci
               </CardTitle>
-              <Button size="sm" onClick={() => navigate('/coach/clients')}>
+              <Button size="sm" onClick={() => navigate('/clients')}>
                 <Plus className="h-4 w-4 mr-2" />
                 Dodaj
               </Button>
@@ -323,7 +323,7 @@ const Index = () => {
                   <Button 
                     variant="outline" 
                     className="mt-4"
-                    onClick={() => navigate('/coach/clients')}
+                    onClick={() => navigate('/clients')}
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     Dodaj pierwszego klienta
@@ -345,7 +345,7 @@ const Index = () => {
               <CreditCard className="h-5 w-5 text-primary" />
               Ostatnie płatności
             </CardTitle>
-            <Button size="sm" variant="outline" onClick={() => navigate('/coach/payments')}>
+            <Button size="sm" variant="outline" onClick={() => navigate('/payments')}>
               Zobacz wszystkie
             </Button>
           </CardHeader>
