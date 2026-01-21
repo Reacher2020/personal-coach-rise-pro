@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import DashboardLayout from "@/components/DashboardLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,9 +10,7 @@ import { cn } from "@/lib/utils";
 import { useAdminMessages, Conversation, Participant } from "@/hooks/useAdminMessages";
 import { format } from "date-fns";
 import { pl } from "date-fns/locale";
-import { RoleBasedSidebar } from "@/components/RoleBasedSidebar";
-import { Header } from "@/components/Header";
-import { 
+import {
   Search, 
   Send,
   MoreVertical,
@@ -41,7 +40,6 @@ const AdminMessages = () => {
     startConversation 
   } = useAdminMessages();
 
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [newMessage, setNewMessage] = useState("");
@@ -145,14 +143,8 @@ const AdminMessages = () => {
   );
 
   return (
-    <div className="min-h-screen flex w-full bg-background">
-      <RoleBasedSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      
-      <div className="flex-1 flex flex-col min-w-0">
-        <Header onMenuToggle={() => setSidebarOpen(!sidebarOpen)} isSidebarOpen={sidebarOpen} />
-        
-        <main className="flex-1 p-4 lg:p-6 overflow-auto">
-          <div className="h-[calc(100vh-8rem)] flex gap-4">
+    <DashboardLayout>
+      <div className="h-[calc(100vh-8rem)] flex gap-4">
             {/* Conversations List */}
             <Card className="w-full md:w-80 lg:w-96 bg-card border-border flex flex-col">
               <div className="p-4 border-b border-border">
@@ -419,10 +411,8 @@ const AdminMessages = () => {
                 </Button>
               </Card>
             )}
-          </div>
-        </main>
-      </div>
-    </div>
+        </div>
+      </DashboardLayout>
   );
 };
 

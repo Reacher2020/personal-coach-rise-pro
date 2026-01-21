@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import DashboardLayout from "@/components/Coach_Layout";
+import DashboardLayout from "@/components/DashboardLayout";
 import { StatCard } from "@/components/StatCard";
 import { ClientCard } from "@/components/ClientCard";
 import { Button } from "@/components/ui/button";
@@ -270,7 +270,7 @@ const Index = () => {
                   <Button 
                     variant="outline" 
                     className="mt-4"
-                    onClick={() => navigate('/calendar')}
+                    onClick={() => navigate('/coach/calendar')}
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     Zaplanuj sesję
@@ -310,7 +310,7 @@ const Index = () => {
               <CardTitle className="text-foreground">
                 Najnowsi klienci
               </CardTitle>
-              <Button size="sm" onClick={() => navigate('/clients')}>
+              <Button size="sm" onClick={() => navigate('/coach/clients')}>
                 <Plus className="h-4 w-4 mr-2" />
                 Dodaj
               </Button>
@@ -323,7 +323,7 @@ const Index = () => {
                   <Button 
                     variant="outline" 
                     className="mt-4"
-                    onClick={() => navigate('/clients')}
+                    onClick={() => navigate('/coach/clients')}
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     Dodaj pierwszego klienta
@@ -345,7 +345,7 @@ const Index = () => {
               <CreditCard className="h-5 w-5 text-primary" />
               Ostatnie płatności
             </CardTitle>
-            <Button size="sm" variant="outline" onClick={() => navigate('/payments')}>
+            <Button size="sm" variant="outline" onClick={() => navigate('/coach/payments')}>
               Zobacz wszystkie
             </Button>
           </CardHeader>

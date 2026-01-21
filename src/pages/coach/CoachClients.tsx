@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import DashboardLayout from "@/components/Coach_Layout";
+import DashboardLayout from "@/components/DashboardLayout";
 import { ClientCard } from "@/components/ClientCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
