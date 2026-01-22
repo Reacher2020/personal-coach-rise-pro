@@ -7,7 +7,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { UserRoleProvider } from "@/hooks/useUserRole";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { RoleBasedRoute } from "@/components/RoleBasedRoute";
-import Auth from "./pages/Auth";
+import Auth from "./pages/";
 import NotFound from "./pages/NotFound";
 
 // Admin pages
