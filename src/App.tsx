@@ -7,7 +7,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { UserRoleProvider } from "@/hooks/useUserRole";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { RoleBasedRoute } from "@/components/RoleBasedRoute";
-import Auth from "./pages/";
+import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
 // Admin pages
@@ -45,7 +45,7 @@ const App = () => (
         <AuthProvider>
           <UserRoleProvider>
             <Routes>
-              <Route path="*" element={<Auth />} />
+              <Route path="/auth" element={<Auth />} />
               
               {/* Admin Routes */}
               <Route path="/admin" element={
