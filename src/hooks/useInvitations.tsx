@@ -61,27 +61,29 @@ export const useInvitations = () => {
     }
   };
 
-  // List invitations WITHOUT tokens for security (tokens not needed for listing)
+  // List invitations with tokens - creators need tokens to share invite links
+  // RLS ensures only the creator (or admin) can see their own invitations
   const getMyInvitations = async () => {
     if (!user) return { data: null, error: new Error('Not authenticated') };
 
     const { data, error } = await supabase
       .from('invitations')
-      .select('id, email, role, status, expires_at, created_at, accepted_at')
+      .select('id, email, role, status, token, expires_at, created_at, accepted_at')
       .eq('invited_by', user.id)
       .order('created_at', { ascending: false });
 
-    return { data: data as Invitation[] | null, error };
+    return { data: data as InvitationWithToken[] | null, error };
   };
 
-  // List all invitations WITHOUT tokens for security
+  // List all invitations with tokens - admin needs tokens to share invite links
+  // RLS ensures only admins can access all invitations
   const getAllInvitations = async () => {
     const { data, error } = await supabase
       .from('invitations')
-      .select('id, email, role, status, expires_at, created_at, accepted_at')
+      .select('id, email, role, status, token, expires_at, created_at, accepted_at')
       .order('created_at', { ascending: false });
 
-    return { data: data as Invitation[] | null, error };
+    return { data: data as InvitationWithToken[] | null, error };
   };
 
   const acceptInvitation = async (token: string) => {

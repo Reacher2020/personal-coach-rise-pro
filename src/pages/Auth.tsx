@@ -60,12 +60,21 @@ const Auth = () => {
     checkAdminExists();
   }, []);
 
-  // Check for invite token in URL
+  // Check for invite token in URL or localStorage
   useEffect(() => {
     const token = searchParams.get('invite');
     if (token) {
+      // Save to localStorage so it survives email confirmation redirect
+      localStorage.setItem('pendingInviteToken', token);
       setInviteToken(token);
       checkInvitation(token);
+    } else {
+      // Check localStorage for pending invitation (after email confirmation)
+      const savedToken = localStorage.getItem('pendingInviteToken');
+      if (savedToken) {
+        setInviteToken(savedToken);
+        checkInvitation(savedToken);
+      }
     }
   }, [searchParams]);
 
@@ -76,19 +85,41 @@ const Auth = () => {
       setInviteValid(true);
       setSignupEmail(invitation.email);
       setShowSignup(true);
+    } else {
+      // Token invalid or expired - clean up
+      localStorage.removeItem('pendingInviteToken');
     }
   };
 
   // Handle redirect after login based on role
   useEffect(() => {
     if (user && !authLoading && !roleLoading) {
-      // If this is admin setup, handle it
       if (isAdminSetup && noAdminExists) {
         handleAdminSetup();
       } else if (inviteToken && inviteValid) {
         handleAcceptInvitation();
       } else if (role) {
-        redirectBasedOnRole();
+        // Check for pending invite even without URL param (e.g., after email confirmation)
+        const savedToken = localStorage.getItem('pendingInviteToken');
+        if (savedToken && !inviteToken) {
+          setInviteToken(savedToken);
+          // Re-check and accept
+          (async () => {
+            const { data: invitation } = await getInvitationByToken(savedToken);
+            if (invitation) {
+              const { success } = await acceptInvitation(savedToken);
+              if (success) {
+                localStorage.removeItem('pendingInviteToken');
+                await refetchRole();
+              }
+            } else {
+              localStorage.removeItem('pendingInviteToken');
+            }
+            redirectBasedOnRole();
+          })();
+        } else {
+          redirectBasedOnRole();
+        }
       }
     }
   }, [user, authLoading, roleLoading, role, isAdminSetup]);
@@ -133,12 +164,19 @@ const Auth = () => {
     
     const { success } = await acceptInvitation(inviteToken);
     if (success) {
+      localStorage.removeItem('pendingInviteToken');
       await refetchRole();
       window.history.replaceState({}, '', '/auth');
       setInviteToken(null);
       setInviteValid(false);
+      // Wait for role to be available before redirecting
+      const { data: newRole } = await supabase.rpc('get_user_role', { _user_id: user!.id });
+      if (newRole === 'admin') navigate('/admin', { replace: true });
+      else if (newRole === 'coach') navigate('/coach', { replace: true });
+      else if (newRole === 'client') navigate('/client', { replace: true });
+    } else {
+      redirectBasedOnRole();
     }
-    redirectBasedOnRole();
   };
 
   const redirectBasedOnRole = () => {
@@ -224,7 +262,14 @@ const Auth = () => {
         toast({ title: 'Błąd rejestracji', description: error.message, variant: 'destructive' });
       }
     } else {
-      toast({ title: 'Konto utworzone!', description: noAdminExists ? 'Konfigurowanie administratora...' : 'Możesz się teraz zalogować' });
+      toast({ 
+        title: 'Konto utworzone!', 
+        description: noAdminExists 
+          ? 'Konfigurowanie administratora...' 
+          : inviteValid 
+            ? 'Sprawdź swoją skrzynkę email i kliknij link potwierdzający, aby aktywować konto.' 
+            : 'Sprawdź swoją skrzynkę email i kliknij link potwierdzający.' 
+      });
     }
   };
 
