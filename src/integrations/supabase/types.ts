@@ -41,6 +41,39 @@ export type Database = {
         }
         Relationships: []
       }
+      client_surveys: {
+        Row: {
+          age_range: string
+          completed_at: string
+          full_name: string
+          gender: string | null
+          height_cm: number | null
+          id: string
+          starting_weight_kg: number | null
+          user_id: string
+        }
+        Insert: {
+          age_range: string
+          completed_at?: string
+          full_name: string
+          gender?: string | null
+          height_cm?: number | null
+          id?: string
+          starting_weight_kg?: number | null
+          user_id: string
+        }
+        Update: {
+          age_range?: string
+          completed_at?: string
+          full_name?: string
+          gender?: string | null
+          height_cm?: number | null
+          id?: string
+          starting_weight_kg?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       client_workout_plans: {
         Row: {
           assigned_at: string
