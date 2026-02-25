@@ -42,6 +42,8 @@ import ClientWorkouts from "./pages/client/ClientWorkouts";
 import ClientProgress from "./pages/client/ClientProgress";
 import ClientMessages from "./pages/client/ClientMessages";
 import ClientSettings from "./pages/client/ClientSettings";
+import ClientOnboardingSurvey from "./pages/client/ClientOnboardingSurvey";
+import { SurveyGuard } from "./components/SurveyGuard";
 
 const queryClient = new QueryClient();
 
@@ -92,45 +94,52 @@ const App = () => (
               } />
               
               {/* Client Routes */}
+              <Route path="/client/onboarding" element={
+                <ProtectedRoute>
+                  <RoleBasedRoute allowedRoles={['client']}>
+                    <ClientOnboardingSurvey />
+                  </RoleBasedRoute>
+                </ProtectedRoute>
+              } />
               <Route path="/client" element={
                 <ProtectedRoute>
                   <RoleBasedRoute allowedRoles={['client']}>
-                    <ClientDashboard />
+                    <SurveyGuard><ClientDashboard /></SurveyGuard>
                   </RoleBasedRoute>
                 </ProtectedRoute>
               } />
               <Route path="/client/sessions" element={
                 <ProtectedRoute>
                   <RoleBasedRoute allowedRoles={['client']}>
-                    <ClientSessions />
+                    <SurveyGuard><ClientSessions /></SurveyGuard>
                   </RoleBasedRoute>
                 </ProtectedRoute>
               } />
               <Route path="/client/workouts" element={
                 <ProtectedRoute>
                   <RoleBasedRoute allowedRoles={['client']}>
-                    <ClientWorkouts />
+                    <SurveyGuard><ClientWorkouts /></SurveyGuard>
                   </RoleBasedRoute>
                 </ProtectedRoute>
               } />
               <Route path="/client/progress" element={
                 <ProtectedRoute>
                   <RoleBasedRoute allowedRoles={['client']}>
-                    <ClientProgress />
+                    <SurveyGuard><ClientProgress /></SurveyGuard>
                   </RoleBasedRoute>
                 </ProtectedRoute>
               } />
               <Route path="/client/messages" element={
                 <ProtectedRoute>
                   <RoleBasedRoute allowedRoles={['client']}>
-                    <ClientMessages />
+                    <SurveyGuard><ClientMessages /></SurveyGuard>
                   </RoleBasedRoute>
                 </ProtectedRoute>
               } />
               <Route path="/client/settings" element={
                 <ProtectedRoute>
                   <RoleBasedRoute allowedRoles={['client']}>
-                    <ClientSettings />
+                    <SurveyGuard><ClientSettings /></SurveyGuard>
                   </RoleBasedRoute>
                 </ProtectedRoute>
               } />
