@@ -341,6 +341,7 @@ const ClientsPage = () => {
                     name={client.name}
                     email={client.email || ""}
                     phone={client.phone || ""}
+                    userId={client.user_id}
                     status={client.status as "active" | "inactive" | "new"}
                     progress={client.progress || 0}
                     onUpdate={handleUpdateClient}
