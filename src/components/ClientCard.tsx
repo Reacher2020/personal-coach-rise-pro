@@ -36,13 +36,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MessageCircle, Calendar, TrendingUp, MoreVertical, Pencil, Trash2, Loader2 } from "lucide-react";
+import { MessageCircle, Calendar, TrendingUp, MoreVertical, Pencil, Trash2, Loader2, ClipboardList } from "lucide-react";
+import { ClientSurveyDialog } from "./ClientSurveyDialog";
 
 interface ClientCardProps {
   id: string;
   name: string;
   email: string;
   phone?: string;
+  userId?: string | null;
   status: "active" | "inactive" | "new";
   nextSession?: string;
   progress: number;
@@ -55,6 +57,7 @@ export const ClientCard = ({
   name,
   email,
   phone,
+  userId,
   status,
   nextSession,
   progress,
@@ -63,6 +66,7 @@ export const ClientCard = ({
 }: ClientCardProps) => {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [isSurveyOpen, setIsSurveyOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   
   const [editName, setEditName] = useState(name);
@@ -206,6 +210,12 @@ export const ClientCard = ({
               <MessageCircle className="h-4 w-4 mr-2" />
               Wiadomość
             </Button>
+            {userId && (
+              <Button variant="outline" size="sm" onClick={() => setIsSurveyOpen(true)}>
+                <ClipboardList className="h-4 w-4 mr-2" />
+                Ankieta
+              </Button>
+            )}
             <Button size="sm" className="flex-1 bg-primary text-primary-foreground">
               Zobacz profil
             </Button>
@@ -310,6 +320,14 @@ export const ClientCard = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Survey Dialog */}
+      <ClientSurveyDialog
+        open={isSurveyOpen}
+        onOpenChange={setIsSurveyOpen}
+        clientName={name}
+        clientUserId={userId || null}
+      />
     </>
   );
 };
