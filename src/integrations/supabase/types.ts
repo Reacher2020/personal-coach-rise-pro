@@ -47,30 +47,63 @@ export type Database = {
           completed_at: string
           full_name: string
           gender: string | null
+          health_description: string | null
+          health_issues: string[] | null
           height_cm: number | null
           id: string
+          motivation_level: number | null
+          motivation_reason: string | null
+          primary_goal: string | null
+          quit_reasons: string[] | null
+          sleep_hours: string | null
           starting_weight_kg: number | null
+          stress_level: string | null
+          training_experience: string | null
           user_id: string
+          weekly_availability: string | null
+          work_type: string | null
         }
         Insert: {
           age_range: string
           completed_at?: string
           full_name: string
           gender?: string | null
+          health_description?: string | null
+          health_issues?: string[] | null
           height_cm?: number | null
           id?: string
+          motivation_level?: number | null
+          motivation_reason?: string | null
+          primary_goal?: string | null
+          quit_reasons?: string[] | null
+          sleep_hours?: string | null
           starting_weight_kg?: number | null
+          stress_level?: string | null
+          training_experience?: string | null
           user_id: string
+          weekly_availability?: string | null
+          work_type?: string | null
         }
         Update: {
           age_range?: string
           completed_at?: string
           full_name?: string
           gender?: string | null
+          health_description?: string | null
+          health_issues?: string[] | null
           height_cm?: number | null
           id?: string
+          motivation_level?: number | null
+          motivation_reason?: string | null
+          primary_goal?: string | null
+          quit_reasons?: string[] | null
+          sleep_hours?: string | null
           starting_weight_kg?: number | null
+          stress_level?: string | null
+          training_experience?: string | null
           user_id?: string
+          weekly_availability?: string | null
+          work_type?: string | null
         }
         Relationships: []
       }
