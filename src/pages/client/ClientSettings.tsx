@@ -20,6 +20,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { AvatarUpload } from "@/components/AvatarUpload";
+import { ClientSurveyEdit } from "@/components/ClientSurveyEdit";
 import { 
   User, 
   Bell, 
@@ -28,7 +29,8 @@ import {
   Save,
   Mail,
   Phone,
-  Calendar
+  Calendar,
+  ClipboardList
 } from "lucide-react";
 import { format } from "date-fns";
 import { pl } from "date-fns/locale";
@@ -173,6 +175,10 @@ export default function ClientSettings() {
             <TabsTrigger value="app" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <Palette className="h-4 w-4 mr-2" />
               Aplikacja
+            </TabsTrigger>
+            <TabsTrigger value="survey" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <ClipboardList className="h-4 w-4 mr-2" />
+              Ankieta
             </TabsTrigger>
             <TabsTrigger value="security" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <Shield className="h-4 w-4 mr-2" />
@@ -463,6 +469,11 @@ export default function ClientSettings() {
               <Save className="h-4 w-4 mr-2" />
               Zapisz ustawienia aplikacji
             </Button>
+          </TabsContent>
+
+          {/* Survey Tab */}
+          <TabsContent value="survey" className="space-y-6">
+            <ClientSurveyEdit />
           </TabsContent>
 
           {/* Security Tab */}
