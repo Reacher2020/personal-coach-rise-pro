@@ -12,7 +12,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
+  
 } from "@/components/ui/dialog";
 import {
   Tabs,
@@ -29,7 +29,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Filter, Users, Mail, Copy, Trash2, Loader2 } from "lucide-react";
+import { Plus, Search, Filter, Users, Mail, Copy, Trash2, Loader2, RefreshCw } from "lucide-react";
 import { useClients } from "@/hooks/useClients";
 import { useInvitations } from "@/hooks/useInvitations";
 import { useToast } from "@/hooks/use-toast";
@@ -38,16 +38,12 @@ import { pl } from "date-fns/locale";
 
 const ClientsPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
-  const [newClientName, setNewClientName] = useState("");
-  const [newClientEmail, setNewClientEmail] = useState("");
-  const [newClientPhone, setNewClientPhone] = useState("");
   const [inviteEmail, setInviteEmail] = useState("");
   const [invitations, setInvitations] = useState<any[]>([]);
+  const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const [invitationsLoading, setInvitationsLoading] = useState(true);
 
-  const { clients, loading, addClient, updateClient, deleteClient, getClientStats } = useClients();
+  const { clients, loading, updateClient, deleteClient, getClientStats } = useClients();
   const { createInvitation, getMyInvitations, deleteInvitation, loading: inviteLoading } = useInvitations();
   const { toast } = useToast();
 
@@ -79,24 +75,6 @@ const ClientsPage = () => {
       client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (client.email && client.email.toLowerCase().includes(searchQuery.toLowerCase()))
   );
-
-  const handleAddClient = async () => {
-    if (!newClientName.trim()) return;
-
-    const { error } = await addClient({
-      name: newClientName,
-      email: newClientEmail || null,
-      phone: newClientPhone || null,
-      status: "new",
-    });
-
-    if (!error) {
-      setNewClientName("");
-      setNewClientEmail("");
-      setNewClientPhone("");
-      setIsAddDialogOpen(false);
-    }
-  };
 
   const handleSendInvitation = async () => {
     if (!inviteEmail.trim()) return;
@@ -141,119 +119,58 @@ const ClientsPage = () => {
             </p>
           </div>
           <div className="flex gap-2">
-            <Dialog open={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline" className="border-border">
-                  <Mail className="h-4 w-4 mr-2" />
-                  Wyślij zaproszenie
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Zaproś klienta</DialogTitle>
-                  <DialogDescription>
-                    Wyślij zaproszenie email do nowego klienta. Po rejestracji
-                    zostanie automatycznie przypisany do Ciebie.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="inviteEmail">Email klienta</Label>
-                    <Input
-                      id="inviteEmail"
-                      type="email"
-                      placeholder="klient@email.com"
-                      value={inviteEmail}
-                      onChange={(e) => setInviteEmail(e.target.value)}
-                    />
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button
-                    variant="outline"
-                    onClick={() => setIsInviteDialogOpen(false)}
-                  >
-                    Anuluj
-                  </Button>
-                  <Button
-                    onClick={handleSendInvitation}
-                    disabled={inviteLoading || !inviteEmail.trim()}
-                  >
-                    {inviteLoading && (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    )}
-                    Wyślij zaproszenie
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-
-            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-              <DialogTrigger asChild>
-                <Button className="bg-primary text-primary-foreground shadow-glow">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Dodaj klienta
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Dodaj klienta ręcznie</DialogTitle>
-                  <DialogDescription>
-                    Dodaj nowego klienta bez wysyłania zaproszenia email.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Imię i nazwisko *</Label>
-                    <Input
-                      id="name"
-                      placeholder="Jan Kowalski"
-                      value={newClientName}
-                      onChange={(e) => setNewClientName(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="jan@email.com"
-                      value={newClientEmail}
-                      onChange={(e) => setNewClientEmail(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Telefon</Label>
-                    <Input
-                      id="phone"
-                      type="tel"
-                      placeholder="+48 123 456 789"
-                      value={newClientPhone}
-                      onChange={(e) => setNewClientPhone(e.target.value)}
-                    />
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button
-                    variant="outline"
-                    onClick={() => setIsAddDialogOpen(false)}
-                  >
-                    Anuluj
-                  </Button>
-                  <Button
-                    onClick={handleAddClient}
-                    disabled={loading || !newClientName.trim()}
-                  >
-                    {loading && (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    )}
-                    Dodaj klienta
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+            <Button variant="outline" onClick={() => { loadInvitations(); }} disabled={loading}>
+              <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+              Odśwież
+            </Button>
+            <Button className="bg-primary text-primary-foreground shadow-glow" onClick={() => setIsInviteDialogOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Dodaj klienta
+            </Button>
           </div>
         </div>
+
+        {/* Invite Client Dialog */}
+        <Dialog open={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Zaproś klienta</DialogTitle>
+              <DialogDescription>
+                Wyślij zaproszenie email do nowego klienta. Po rejestracji
+                zostanie automatycznie przypisany do Ciebie.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="inviteEmail">Email klienta</Label>
+                <Input
+                  id="inviteEmail"
+                  type="email"
+                  placeholder="klient@email.com"
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setIsInviteDialogOpen(false)}
+              >
+                Anuluj
+              </Button>
+              <Button
+                onClick={handleSendInvitation}
+                disabled={inviteLoading || !inviteEmail.trim()}
+              >
+                {inviteLoading && (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                )}
+                Wyślij zaproszenie
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -361,22 +278,13 @@ const ClientsPage = () => {
                   <p className="text-muted-foreground mb-4">
                     {searchQuery
                       ? "Spróbuj zmienić kryteria wyszukiwania"
-                      : "Dodaj pierwszego klienta lub wyślij zaproszenie"}
+                      : "Zaproś pierwszego klienta wysyłając zaproszenie"}
                   </p>
                   {!searchQuery && (
-                    <div className="flex gap-2 justify-center">
-                      <Button
-                        variant="outline"
-                        onClick={() => setIsInviteDialogOpen(true)}
-                      >
-                        <Mail className="h-4 w-4 mr-2" />
-                        Wyślij zaproszenie
-                      </Button>
-                      <Button onClick={() => setIsAddDialogOpen(true)}>
-                        <Plus className="h-4 w-4 mr-2" />
-                        Dodaj klienta
-                      </Button>
-                    </div>
+                    <Button onClick={() => setIsInviteDialogOpen(true)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Dodaj klienta
+                    </Button>
                   )}
                 </CardContent>
               </Card>
