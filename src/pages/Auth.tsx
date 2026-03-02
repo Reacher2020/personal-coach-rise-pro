@@ -298,7 +298,7 @@ const Auth = () => {
             <Dumbbell className="h-8 w-8 text-hero-foreground" />
           </div>
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-foreground">CoachRise PRO</h1>
+            <h1 className="text-2xl font-bold text-foreground">CoachRaise PRO</h1>
           </div>
         </div>
 
