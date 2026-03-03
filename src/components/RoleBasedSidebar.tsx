@@ -118,35 +118,15 @@ export const RoleBasedSidebar = ({ isOpen, onClose }: RoleBasedSidebarProps) => 
             <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center", branding.color)}>
               <BrandIcon className="h-5 w-5 text-primary-foreground" />
             </div>
-            <span className="font-bold text-lg text-foreground">{branding.title}</span>
+            <span className="font-bold text-lg text-foreground">
+              {isAdmin && "Administrator"}
+              {isCoach && "Trener"}
+              {isClient && "FitCoach"}
+            </span>
           </div>
           <Button variant="ghost" size="icon" onClick={onClose} className="lg:hidden">
             <X className="h-5 w-5" />
           </Button>
-        </div>
-
-        {/* Role Badge */}
-        <div className="px-4 py-3 border-b border-border">
-          <div className={cn(
-            "flex items-center gap-2 px-3 py-2 rounded-lg",
-            isAdmin && "bg-red-500/10",
-            isCoach && "bg-primary/10",
-            isClient && "bg-blue-500/10"
-          )}>
-            {isAdmin && <Shield className="h-4 w-4 text-red-400" />}
-            {isCoach && <UserCog className="h-4 w-4 text-primary" />}
-            {isClient && <User className="h-4 w-4 text-blue-400" />}
-            <span className={cn(
-              "text-sm font-medium",
-              isAdmin && "text-red-400",
-              isCoach && "text-primary",
-              isClient && "text-blue-400"
-            )}>
-              {isAdmin && "Administrator"}
-              {isCoach && "Trener"}
-              {isClient && "Klient"}
-            </span>
-          </div>
         </div>
         
         {/* Navigation */}
