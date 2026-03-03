@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Menu, X, User, Settings, LogOut } from "lucide-react";
+import { Menu, X, User, Settings, LogOut, Shield, UserCog, Dumbbell } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useNavigate } from "react-router-dom";
@@ -51,10 +51,15 @@ export const Header = ({ onMenuToggle, isSidebarOpen }: HeaderProps) => {
           </div>
           <h1 className="text-xl font-bold text-foreground hidden sm:block">
             CoachRaise PRO
-            {isAdmin && " - Administrator"}
-            {isCoach && " - Trener"}
-            {isClient && " - FitCoach"}
           </h1>
+          {isAdmin && <Shield className="h-5 w-5 text-destructive" />}
+          {isCoach && <UserCog className="h-5 w-5 text-primary" />}
+          {isClient && <Dumbbell className="h-5 w-5 text-primary" />}
+          <span className="text-sm font-medium text-muted-foreground hidden sm:block">
+            {isAdmin && "Administrator"}
+            {isCoach && "Trener"}
+            {isClient && "FitCoach"}
+          </span>
         </div>
       </div>
 
