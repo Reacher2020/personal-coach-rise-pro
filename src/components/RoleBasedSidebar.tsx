@@ -60,13 +60,13 @@ const clientMenuItems: NavItem[] = [
 const roleBranding = {
   admin: {
     icon: Shield,
-    title: "Admin Panel",
+    title: "Administrator",
     color: "bg-red-500",
     iconColor: "text-red-400",
   },
   coach: {
     icon: UserCog,
-    title: "Coach Pro",
+    title: "Trener",
     color: "bg-primary",
     iconColor: "text-primary",
   },
@@ -125,29 +125,6 @@ export const RoleBasedSidebar = ({ isOpen, onClose }: RoleBasedSidebarProps) => 
           </Button>
         </div>
 
-        {/* Role Badge */}
-        <div className="px-4 py-3 border-b border-border">
-          <div className={cn(
-            "flex items-center gap-2 px-3 py-2 rounded-lg",
-            isAdmin && "bg-red-500/10",
-            isCoach && "bg-primary/10",
-            isClient && "bg-blue-500/10"
-          )}>
-            {isAdmin && <Shield className="h-4 w-4 text-red-400" />}
-            {isCoach && <UserCog className="h-4 w-4 text-primary" />}
-            {isClient && <User className="h-4 w-4 text-blue-400" />}
-            <span className={cn(
-              "text-sm font-medium",
-              isAdmin && "text-red-400",
-              isCoach && "text-primary",
-              isClient && "text-blue-400"
-            )}>
-              {isAdmin && "Administrator"}
-              {isCoach && "Trener"}
-              {isClient && "Klient"}
-            </span>
-          </div>
-        </div>
         
         {/* Navigation */}
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
