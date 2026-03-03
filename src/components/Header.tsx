@@ -46,16 +46,10 @@ export const Header = ({ onMenuToggle, isSidebarOpen }: HeaderProps) => {
         </Button>
         
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
-            <span className="text-hero-foreground font-bold text-sm">CR</span>
-          </div>
-          <h1 className="text-xl font-bold text-foreground hidden sm:block">
-            CoachRaise PRO
-          </h1>
           {isAdmin && <Shield className="h-5 w-5 text-destructive" />}
           {isCoach && <UserCog className="h-5 w-5 text-primary" />}
           {isClient && <Dumbbell className="h-5 w-5 text-primary" />}
-          <span className="text-sm font-medium text-muted-foreground hidden sm:block">
+          <span className="text-sm font-semibold text-foreground hidden sm:block">
             {isAdmin && "Administrator"}
             {isCoach && "Trener"}
             {isClient && "FitCoach"}
