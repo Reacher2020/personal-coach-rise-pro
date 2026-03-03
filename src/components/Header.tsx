@@ -51,6 +51,9 @@ export const Header = ({ onMenuToggle, isSidebarOpen }: HeaderProps) => {
           </div>
           <h1 className="text-xl font-bold text-foreground hidden sm:block">
             CoachRaise PRO
+            {isAdmin && " - Administrator"}
+            {isCoach && " - Trener"}
+            {isClient && " - FitCoach"}
           </h1>
         </div>
       </div>
