@@ -115,10 +115,14 @@ export const RoleBasedSidebar = ({ isOpen, onClose }: RoleBasedSidebarProps) => 
         {/* Header */}
         <div className="h-16 flex items-center justify-between px-4 border-b border-border">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
-              <span className="text-hero-foreground font-bold text-sm">CR</span>
+            <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center", branding.color)}>
+              <BrandIcon className="h-5 w-5 text-primary-foreground" />
             </div>
-            <span className="font-bold text-lg text-foreground">CoachRaise PRO</span>
+            <span className="font-bold text-lg text-foreground">
+              {isAdmin && "Administrator"}
+              {isCoach && "Trener"}
+              {isClient && "FitCoach"}
+            </span>
           </div>
           <Button variant="ghost" size="icon" onClick={onClose} className="lg:hidden">
             <X className="h-5 w-5" />
