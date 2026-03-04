@@ -32,7 +32,7 @@ import {
 const Settings = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { setTheme, setTimeFormat } = useAppSettings();
+  const { setTheme, setTimeFormat, saveSettings } = useAppSettings();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -211,8 +211,11 @@ const Settings = () => {
         variant: "destructive",
       });
     } else {
-      setTheme(appSettings.theme as "dark" | "light" | "system");
-      setTimeFormat(appSettings.timeFormat as "24h" | "12h");
+      const newTheme = appSettings.theme as "dark" | "light" | "system";
+      const newTimeFormat = appSettings.timeFormat as "24h" | "12h";
+      setTheme(newTheme);
+      setTimeFormat(newTimeFormat);
+      await saveSettings({ theme: newTheme, timeFormat: newTimeFormat });
       toast({
         title: "Ustawienia aplikacji zapisane",
         description: "Ustawienia aplikacji zostały zaktualizowane.",

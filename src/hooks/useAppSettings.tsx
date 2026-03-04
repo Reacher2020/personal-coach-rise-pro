@@ -1,4 +1,6 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 type Theme = "dark" | "light" | "system";
 type TimeFormat = "24h" | "12h";
@@ -6,10 +8,14 @@ type TimeFormat = "24h" | "12h";
 interface AppSettingsContextType {
   theme: Theme;
   timeFormat: TimeFormat;
+  language: string;
   setTheme: (theme: Theme) => void;
   setTimeFormat: (format: TimeFormat) => void;
+  setLanguage: (lang: string) => void;
+  saveSettings: (overrides?: { theme?: Theme; timeFormat?: TimeFormat; language?: string }) => Promise<void>;
   formatTime: (date: Date | string) => string;
   formatDateTime: (date: Date | string) => string;
+  loading: boolean;
 }
 
 const AppSettingsContext = createContext<AppSettingsContextType | undefined>(undefined);
@@ -21,36 +27,61 @@ function getSystemTheme(): "dark" | "light" {
 function applyTheme(theme: Theme) {
   const root = document.documentElement;
   root.classList.remove("dark", "light");
-  if (theme === "system") {
-    root.classList.add(getSystemTheme());
-  } else {
-    root.classList.add(theme);
-  }
+  root.classList.add(theme === "system" ? getSystemTheme() : theme);
 }
 
 export function AppSettingsProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>(() => {
-    return (localStorage.getItem("app-theme") as Theme) || "dark";
-  });
-  const [timeFormat, setTimeFormatState] = useState<TimeFormat>(() => {
-    return (localStorage.getItem("app-time-format") as TimeFormat) || "24h";
-  });
+  const { user } = useAuth();
+  const [theme, setThemeState] = useState<Theme>("dark");
+  const [timeFormat, setTimeFormatState] = useState<TimeFormat>("24h");
+  const [language, setLanguageState] = useState("pl");
+  const [loading, setLoading] = useState(true);
+  const [loaded, setLoaded] = useState(false);
 
-  const setTheme = (t: Theme) => {
-    setThemeState(t);
-    localStorage.setItem("app-theme", t);
-    applyTheme(t);
-  };
-
-  const setTimeFormat = (f: TimeFormat) => {
-    setTimeFormatState(f);
-    localStorage.setItem("app-time-format", f);
-  };
-
-  // Apply theme on mount and when system preference changes
+  // Load settings from DB when user logs in
   useEffect(() => {
-    applyTheme(theme);
+    if (!user) {
+      // Apply defaults from localStorage as fallback for non-logged-in state
+      const lsTheme = (localStorage.getItem("app-theme") as Theme) || "dark";
+      setThemeState(lsTheme);
+      applyTheme(lsTheme);
+      setLoading(false);
+      return;
+    }
 
+    const loadSettings = async () => {
+      setLoading(true);
+      const { data } = await supabase
+        .from("user_app_settings" as any)
+        .select("theme, time_format, language")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (data) {
+        const d = data as any;
+        const t = (d.theme || "dark") as Theme;
+        const tf = (d.time_format || "24h") as TimeFormat;
+        const lang = d.language || "pl";
+        setThemeState(t);
+        setTimeFormatState(tf);
+        setLanguageState(lang);
+        applyTheme(t);
+      } else {
+        // No settings row yet — create one with defaults
+        await supabase
+          .from("user_app_settings" as any)
+          .insert({ user_id: user.id, theme: "dark", time_format: "24h", language: "pl" } as any);
+        applyTheme("dark");
+      }
+      setLoading(false);
+      setLoaded(true);
+    };
+
+    loadSettings();
+  }, [user]);
+
+  // Listen for system theme changes
+  useEffect(() => {
     if (theme === "system") {
       const mq = window.matchMedia("(prefers-color-scheme: dark)");
       const handler = () => applyTheme("system");
@@ -58,6 +89,32 @@ export function AppSettingsProvider({ children }: { children: ReactNode }) {
       return () => mq.removeEventListener("change", handler);
     }
   }, [theme]);
+
+  const setTheme = (t: Theme) => {
+    setThemeState(t);
+    applyTheme(t);
+    localStorage.setItem("app-theme", t);
+  };
+
+  const setTimeFormat = (f: TimeFormat) => {
+    setTimeFormatState(f);
+  };
+
+  const setLanguage = (l: string) => {
+    setLanguageState(l);
+  };
+
+  const saveSettings = useCallback(async (overrides?: { theme?: Theme; timeFormat?: TimeFormat; language?: string }) => {
+    if (!user) return;
+    const t = overrides?.theme ?? theme;
+    const tf = overrides?.timeFormat ?? timeFormat;
+    const l = overrides?.language ?? language;
+    await supabase
+      .from("user_app_settings" as any)
+      .update({ theme: t, time_format: tf, language: l, updated_at: new Date().toISOString() } as any)
+      .eq("user_id", user.id);
+    localStorage.setItem("app-theme", t);
+  }, [user, theme, timeFormat, language]);
 
   const formatTime = (date: Date | string): string => {
     const d = typeof date === "string" ? new Date(date) : date;
@@ -74,7 +131,7 @@ export function AppSettingsProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AppSettingsContext.Provider value={{ theme, timeFormat, setTheme, setTimeFormat, formatTime, formatDateTime }}>
+    <AppSettingsContext.Provider value={{ theme, timeFormat, language, setTheme, setTimeFormat, setLanguage, saveSettings, formatTime, formatDateTime, loading }}>
       {children}
     </AppSettingsContext.Provider>
   );
