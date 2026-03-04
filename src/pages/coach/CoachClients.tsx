@@ -217,11 +217,13 @@ const ClientsPage = () => {
 
         {/* Main Content Tabs */}
         <Tabs defaultValue="clients" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="clients">
+          <TabsList className="bg-card border border-border">
+            <TabsTrigger value="clients" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <Users className="h-4 w-4 mr-2" />
               Klienci ({clients.length})
             </TabsTrigger>
-            <TabsTrigger value="invitations">
+            <TabsTrigger value="invitations" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <Mail className="h-4 w-4 mr-2" />
               Zaproszenia ({pendingInvitations.length})
             </TabsTrigger>
           </TabsList>
