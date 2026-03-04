@@ -244,11 +244,11 @@ const AdminDashboard = () => {
           <TabsList className="bg-card border border-border">
             <TabsTrigger value="coaches" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <Users className="h-4 w-4 mr-2" />
-              Trenerzy
+              Trenerzy ({coaches.length})
             </TabsTrigger>
             <TabsTrigger value="invitations" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <Mail className="h-4 w-4 mr-2" />
-              Zaproszenia
+              Zaproszenia ({pendingInvitations.length})
             </TabsTrigger>
           </TabsList>
 
