@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { UserRoleProvider, useUserRole } from "@/hooks/useUserRole";
+import { AppSettingsProvider } from "@/hooks/useAppSettings";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { RoleBasedRoute } from "@/components/RoleBasedRoute";
 import Auth from "./pages/Auth";
@@ -54,6 +55,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          <AppSettingsProvider>
           <UserRoleProvider>
             <Routes>
               <Route path="/auth" element={<Auth />} />
@@ -206,6 +208,7 @@ const App = () => (
               <Route path="*" element={<NotFound />} />
             </Routes>
           </UserRoleProvider>
+          </AppSettingsProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

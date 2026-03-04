@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useAppSettings } from "@/hooks/useAppSettings";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -31,6 +32,7 @@ import {
 const Settings = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { setTheme, setTimeFormat } = useAppSettings();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -209,6 +211,8 @@ const Settings = () => {
         variant: "destructive",
       });
     } else {
+      setTheme(appSettings.theme as "dark" | "light" | "system");
+      setTimeFormat(appSettings.timeFormat as "24h" | "12h");
       toast({
         title: "Ustawienia aplikacji zapisane",
         description: "Ustawienia aplikacji zostały zaktualizowane.",
