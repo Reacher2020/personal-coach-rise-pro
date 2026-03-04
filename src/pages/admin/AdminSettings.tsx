@@ -18,6 +18,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useAppSettings } from "@/hooks/useAppSettings";
 import { AvatarUpload } from "@/components/AvatarUpload";
 import { 
   User, 
@@ -30,6 +31,7 @@ import {
 export default function AdminSettings() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { theme, timeFormat, setTheme, setTimeFormat } = useAppSettings();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -50,8 +52,8 @@ export default function AdminSettings() {
 
   const [appSettings, setAppSettings] = useState({
     language: "pl",
-    theme: "dark",
-    timeFormat: "24h",
+    theme: theme,
+    timeFormat: timeFormat,
   });
 
   useEffect(() => {
@@ -116,6 +118,8 @@ export default function AdminSettings() {
   };
 
   const handleSaveAppSettings = () => {
+    setTheme(appSettings.theme as "dark" | "light" | "system");
+    setTimeFormat(appSettings.timeFormat as "24h" | "12h");
     toast({
       title: "Ustawienia aplikacji zapisane",
       description: "Ustawienia aplikacji zostały zaktualizowane.",
@@ -329,7 +333,7 @@ export default function AdminSettings() {
                     <Label>Motyw</Label>
                     <Select
                       value={appSettings.theme}
-                      onValueChange={(value) => setAppSettings({ ...appSettings, theme: value })}
+                      onValueChange={(value: string) => setAppSettings({ ...appSettings, theme: value as "dark" | "light" | "system" })}
                     >
                       <SelectTrigger className="bg-background border-border">
                         <SelectValue />
@@ -345,7 +349,7 @@ export default function AdminSettings() {
                     <Label>Format czasu</Label>
                     <Select
                       value={appSettings.timeFormat}
-                      onValueChange={(value) => setAppSettings({ ...appSettings, timeFormat: value })}
+                      onValueChange={(value: string) => setAppSettings({ ...appSettings, timeFormat: value as "24h" | "12h" })}
                     >
                       <SelectTrigger className="bg-background border-border">
                         <SelectValue />
