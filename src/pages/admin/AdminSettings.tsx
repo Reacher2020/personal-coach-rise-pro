@@ -31,7 +31,7 @@ import {
 export default function AdminSettings() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { theme, timeFormat, setTheme, setTimeFormat } = useAppSettings();
+  const { theme, timeFormat, setTheme, setTimeFormat, saveSettings } = useAppSettings();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -117,9 +117,12 @@ export default function AdminSettings() {
     });
   };
 
-  const handleSaveAppSettings = () => {
-    setTheme(appSettings.theme as "dark" | "light" | "system");
-    setTimeFormat(appSettings.timeFormat as "24h" | "12h");
+  const handleSaveAppSettings = async () => {
+    const newTheme = appSettings.theme as "dark" | "light" | "system";
+    const newTimeFormat = appSettings.timeFormat as "24h" | "12h";
+    setTheme(newTheme);
+    setTimeFormat(newTimeFormat);
+    await saveSettings({ theme: newTheme, timeFormat: newTimeFormat });
     toast({
       title: "Ustawienia aplikacji zapisane",
       description: "Ustawienia aplikacji zostały zaktualizowane.",

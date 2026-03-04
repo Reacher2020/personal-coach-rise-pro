@@ -499,6 +499,36 @@ export type Database = {
           },
         ]
       }
+      user_app_settings: {
+        Row: {
+          created_at: string
+          id: string
+          language: string
+          theme: string
+          time_format: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          language?: string
+          theme?: string
+          time_format?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          language?: string
+          theme?: string
+          time_format?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
