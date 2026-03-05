@@ -153,16 +153,21 @@ const AdminDashboard = () => {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl lg:text-3xl font-bold text-foreground">
-              Panel Administratora
-            </h1>
-            <p className="text-muted-foreground">
-              Zarządzaj trenerami i zaproszeniami
-            </p>
-          </div>
+        {/* Welcome */}
+        <div className="bg-gradient-hero border border-border rounded-lg p-6">
+          <h1 className="text-2xl lg:text-3xl font-bold text-foreground mb-2">
+            Panel Administratora 🛡️
+          </h1>
+          <p className="text-muted-foreground">
+            {coaches.length > 0
+              ? `Zarządzasz ${coaches.length} ${coaches.length === 1 ? 'trenerem' : coaches.length < 5 ? 'trenerami' : 'trenerami'}. ${pendingInvitations.length > 0 ? `${pendingInvitations.length} ${pendingInvitations.length === 1 ? 'zaproszenie oczekuje' : 'zaproszeń oczekuje'} na akceptację.` : ''}`
+              : 'Zarządzaj trenerami i zaproszeniami'}
+          </p>
+        </div>
+
+        {/* Actions */}
+        <div className="flex justify-end">
+
           <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
             <DialogTrigger asChild>
               <Button className="bg-primary text-primary-foreground shadow-glow">

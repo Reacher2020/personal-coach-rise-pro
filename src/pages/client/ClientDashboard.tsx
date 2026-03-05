@@ -69,12 +69,14 @@ const ClientDashboard = () => {
     <DashboardLayout>
       <div className="space-y-6 max-w-4xl mx-auto">
         {/* Welcome */}
-        <div>
-          <h1 className="text-2xl lg:text-3xl font-bold text-foreground">
-            Witaj, {profile?.full_name || 'Kliencie'}!
+        <div className="bg-gradient-hero border border-border rounded-lg p-6">
+          <h1 className="text-2xl lg:text-3xl font-bold text-foreground mb-2">
+            Witaj, {profile?.full_name || 'Kliencie'}! 👋
           </h1>
           <p className="text-muted-foreground">
-            Twój panel klienta
+            {upcomingSessions.length > 0
+              ? `Masz ${upcomingSessions.length} ${upcomingSessions.length === 1 ? 'nadchodzącą sesję' : upcomingSessions.length < 5 ? 'nadchodzące sesje' : 'nadchodzących sesji'} treningowych.`
+              : 'Nie masz żadnych zaplanowanych sesji. Sprawdź swoje treningi!'}
           </p>
         </div>
 
