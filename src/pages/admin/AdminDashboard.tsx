@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/hooks/useAuth';
+import { useGreeting } from '@/hooks/useGreeting';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -67,13 +68,7 @@ const AdminDashboard = () => {
   const [invitations, setInvitations] = useState<any[]>([]);
   const [loadingData, setLoadingData] = useState(true);
   const [profile, setProfile] = useState<Profile | null>(null);
-
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return "Dzień dobry";
-    if (hour < 18) return "Cześć";
-    return "Dobry wieczór";
-  };
+  const { getGreeting } = useGreeting();
 
   const fetchData = async () => {
     setLoadingData(true);

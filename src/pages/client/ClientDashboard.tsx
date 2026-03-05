@@ -3,6 +3,7 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
+import { useGreeting } from '@/hooks/useGreeting';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   Calendar, 
@@ -32,13 +33,7 @@ interface Profile {
 const ClientDashboard = () => {
   const { user } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
-
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return "Dzień dobry";
-    if (hour < 18) return "Cześć";
-    return "Dobry wieczór";
-  };
+  const { getGreeting } = useGreeting();
   const [upcomingSessions, setUpcomingSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
 
