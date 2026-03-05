@@ -19,6 +19,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useAppSettings } from "@/hooks/useAppSettings";
 import { AvatarUpload } from "@/components/AvatarUpload";
 import { ClientSurveyEdit } from "@/components/ClientSurveyEdit";
 import { 
@@ -47,6 +48,7 @@ interface Profile {
 export default function ClientSettings() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { theme, timeFormat, language, setTheme, setTimeFormat, setLanguage, saveSettings } = useAppSettings();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -66,11 +68,15 @@ export default function ClientSettings() {
     pushCoachMessage: true,
   });
 
-  const [appSettings, setAppSettings] = useState({
-    language: "pl",
-    theme: "dark",
-    timeFormat: "24h",
+  const [appSettings, setAppSettings] = useState<{ language: string; theme: string; timeFormat: string }>({
+    language: language,
+    theme: theme,
+    timeFormat: timeFormat,
   });
+
+  useEffect(() => {
+    setAppSettings({ language, theme, timeFormat });
+  }, [language, theme, timeFormat]);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -133,7 +139,13 @@ export default function ClientSettings() {
     });
   };
 
-  const handleSaveAppSettings = () => {
+  const handleSaveAppSettings = async () => {
+    const newTheme = appSettings.theme as "dark" | "light" | "system";
+    const newTimeFormat = appSettings.timeFormat as "24h" | "12h";
+    setTheme(newTheme);
+    setTimeFormat(newTimeFormat);
+    setLanguage(appSettings.language);
+    await saveSettings({ theme: newTheme, timeFormat: newTimeFormat, language: appSettings.language });
     toast({
       title: "Ustawienia aplikacji zapisane",
       description: "Ustawienia aplikacji zostały zaktualizowane.",
@@ -434,7 +446,7 @@ export default function ClientSettings() {
                     <Label>Motyw</Label>
                     <Select
                       value={appSettings.theme}
-                      onValueChange={(value) => setAppSettings({ ...appSettings, theme: value })}
+                      onValueChange={(value: string) => setAppSettings({ ...appSettings, theme: value })}
                     >
                       <SelectTrigger className="bg-background border-border">
                         <SelectValue />
@@ -450,7 +462,7 @@ export default function ClientSettings() {
                     <Label>Format czasu</Label>
                     <Select
                       value={appSettings.timeFormat}
-                      onValueChange={(value) => setAppSettings({ ...appSettings, timeFormat: value })}
+                      onValueChange={(value: string) => setAppSettings({ ...appSettings, timeFormat: value })}
                     >
                       <SelectTrigger className="bg-background border-border">
                         <SelectValue />
