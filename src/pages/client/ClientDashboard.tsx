@@ -32,6 +32,13 @@ interface Profile {
 const ClientDashboard = () => {
   const { user } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Dzień dobry";
+    if (hour < 18) return "Cześć";
+    return "Dobry wieczór";
+  };
   const [upcomingSessions, setUpcomingSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -71,7 +78,7 @@ const ClientDashboard = () => {
         {/* Welcome */}
         <div className="bg-gradient-hero border border-border rounded-lg p-6">
           <h1 className="text-2xl lg:text-3xl font-bold text-foreground mb-2">
-            Witaj, {profile?.full_name || 'Kliencie'}! 👋
+            {getGreeting()}, {profile?.full_name?.split(' ')[0] || 'Kliencie'}! 👋
           </h1>
           <p className="text-muted-foreground">
             {upcomingSessions.length > 0
