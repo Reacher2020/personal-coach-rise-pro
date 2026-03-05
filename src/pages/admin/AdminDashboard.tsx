@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
+import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -52,7 +53,12 @@ interface Coach {
   created_at: string;
 }
 
+interface Profile {
+  full_name: string | null;
+}
+
 const AdminDashboard = () => {
+  const { user } = useAuth();
   const { toast } = useToast();
   const { createInvitation, getAllInvitations, deleteInvitation, loading: invLoading } = useInvitations();
   const [inviteEmail, setInviteEmail] = useState('');
@@ -60,9 +66,27 @@ const AdminDashboard = () => {
   const [coaches, setCoaches] = useState<Coach[]>([]);
   const [invitations, setInvitations] = useState<any[]>([]);
   const [loadingData, setLoadingData] = useState(true);
+  const [profile, setProfile] = useState<Profile | null>(null);
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Dzień dobry";
+    if (hour < 18) return "Cześć";
+    return "Dobry wieczór";
+  };
 
   const fetchData = async () => {
     setLoadingData(true);
+
+    // Fetch admin profile
+    if (user) {
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      setProfile(profileData);
+    }
     
     // Fetch coaches (profiles with coach role)
     const { data: rolesData } = await supabase
@@ -156,7 +180,7 @@ const AdminDashboard = () => {
         {/* Welcome */}
         <div className="bg-gradient-hero border border-border rounded-lg p-6">
           <h1 className="text-2xl lg:text-3xl font-bold text-foreground mb-2">
-            Panel Administratora 🛡️
+            {getGreeting()}, {profile?.full_name?.split(' ')[0] || 'Administratorze'}! 🛡️
           </h1>
           <p className="text-muted-foreground">
             {coaches.length > 0
