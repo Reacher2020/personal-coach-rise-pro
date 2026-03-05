@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
+import { useGreeting } from "@/hooks/useGreeting";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import {
@@ -185,12 +186,7 @@ const Index = () => {
     },
   ];
 
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return "Dzień dobry";
-    if (hour < 18) return "Cześć";
-    return "Dobry wieczór";
-  };
+  const { getGreeting } = useGreeting();
 
   const getPaymentStatusBadge = (status: string) => {
     switch (status) {
