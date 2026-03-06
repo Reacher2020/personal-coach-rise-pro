@@ -64,30 +64,34 @@ const Auth = () => {
   useEffect(() => {
     const token = searchParams.get('invite');
     if (token) {
-      // Save to localStorage so it survives email confirmation redirect
       localStorage.setItem('pendingInviteToken', token);
       setInviteToken(token);
+      setInviteChecking(true);
       checkInvitation(token);
     } else {
-      // Check localStorage for pending invitation (after email confirmation)
       const savedToken = localStorage.getItem('pendingInviteToken');
       if (savedToken) {
         setInviteToken(savedToken);
+        setInviteChecking(true);
         checkInvitation(savedToken);
       }
     }
   }, [searchParams]);
 
   const checkInvitation = async (token: string) => {
-    const { data: invitation } = await getInvitationByToken(token);
-    if (invitation) {
-      setInviteRole(invitation.role);
-      setInviteValid(true);
-      setSignupEmail(invitation.email);
-      setShowSignup(true);
-    } else {
-      // Token invalid or expired - clean up
-      localStorage.removeItem('pendingInviteToken');
+    try {
+      const { data: invitation } = await getInvitationByToken(token);
+      if (invitation) {
+        setInviteRole(invitation.role);
+        setInviteValid(true);
+        setSignupEmail(invitation.email);
+        setShowSignup(true);
+      } else {
+        localStorage.removeItem('pendingInviteToken');
+        setInviteToken(null);
+      }
+    } finally {
+      setInviteChecking(false);
     }
   };
 
