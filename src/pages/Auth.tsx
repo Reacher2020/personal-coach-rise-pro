@@ -64,36 +64,54 @@ const Auth = () => {
   useEffect(() => {
     const token = searchParams.get('invite');
     if (token) {
-      // Save to localStorage so it survives email confirmation redirect
       localStorage.setItem('pendingInviteToken', token);
       setInviteToken(token);
+      setInviteChecking(true);
       checkInvitation(token);
     } else {
-      // Check localStorage for pending invitation (after email confirmation)
       const savedToken = localStorage.getItem('pendingInviteToken');
       if (savedToken) {
         setInviteToken(savedToken);
+        setInviteChecking(true);
         checkInvitation(savedToken);
       }
     }
   }, [searchParams]);
 
   const checkInvitation = async (token: string) => {
-    const { data: invitation } = await getInvitationByToken(token);
-    if (invitation) {
-      setInviteRole(invitation.role);
-      setInviteValid(true);
-      setSignupEmail(invitation.email);
-      setShowSignup(true);
-    } else {
-      // Token invalid or expired - clean up
-      localStorage.removeItem('pendingInviteToken');
+    try {
+      const { data: invitation } = await getInvitationByToken(token);
+      if (invitation) {
+        setInviteRole(invitation.role);
+        setInviteValid(true);
+        setSignupEmail(invitation.email);
+        setShowSignup(true);
+      } else {
+        localStorage.removeItem('pendingInviteToken');
+        setInviteToken(null);
+      }
+    } finally {
+      setInviteChecking(false);
     }
   };
+
+  // Track whether we're still checking the invitation
+  const [inviteChecking, setInviteChecking] = useState(false);
 
   // Handle redirect after login based on role
   useEffect(() => {
     if (!user || authLoading || roleLoading) return;
+
+    // Don't redirect while we're still validating the invite token
+    if (inviteChecking) return;
+
+    // If there's an invite param in URL but token hasn't been validated yet, wait
+    const urlInvite = searchParams.get('invite');
+    const savedToken = localStorage.getItem('pendingInviteToken');
+    if ((urlInvite || savedToken) && !inviteToken && !inviteValid) {
+      // Still waiting for checkInvitation to complete
+      return;
+    }
 
     // Step 1: Admin setup takes priority
     if (isAdminSetup && noAdminExists) {
@@ -101,45 +119,17 @@ const Auth = () => {
       return;
     }
 
-    // Step 2: If we have a valid invite token (from URL), accept it
+    // Step 2: If we have a valid invite token, accept it
     if (inviteToken && inviteValid) {
       handleAcceptInvitation();
       return;
     }
 
-    // Step 3: Check localStorage for pending invite (after email confirmation redirect)
-    const savedToken = localStorage.getItem('pendingInviteToken');
-    if (savedToken && !inviteToken) {
-      // Set token and trigger async acceptance
-      (async () => {
-        const { data: invitation } = await getInvitationByToken(savedToken);
-        if (invitation) {
-          setInviteToken(savedToken);
-          setInviteValid(true);
-          const { success } = await acceptInvitation(savedToken);
-          if (success) {
-            localStorage.removeItem('pendingInviteToken');
-            await refetchRole();
-            const { data: newRole } = await supabase.rpc('get_user_role', { _user_id: user.id });
-            if (newRole === 'admin') navigate('/admin', { replace: true });
-            else if (newRole === 'coach') navigate('/coach', { replace: true });
-            else if (newRole === 'client') navigate('/client', { replace: true });
-            return;
-          }
-        } else {
-          localStorage.removeItem('pendingInviteToken');
-        }
-        // If invitation invalid or acceptance failed, redirect based on existing role
-        if (role) redirectBasedOnRole();
-      })();
-      return;
-    }
-
-    // Step 4: Normal role-based redirect
+    // Step 3: Normal role-based redirect
     if (role) {
       redirectBasedOnRole();
     }
-  }, [user, authLoading, roleLoading, role, isAdminSetup, inviteToken, inviteValid]);
+  }, [user, authLoading, roleLoading, role, isAdminSetup, inviteToken, inviteValid, inviteChecking, searchParams]);
 
   const handleAdminSetup = async () => {
     if (!user) return;
