@@ -93,36 +93,53 @@ const Auth = () => {
 
   // Handle redirect after login based on role
   useEffect(() => {
-    if (user && !authLoading && !roleLoading) {
-      if (isAdminSetup && noAdminExists) {
-        handleAdminSetup();
-      } else if (inviteToken && inviteValid) {
-        handleAcceptInvitation();
-      } else if (role) {
-        // Check for pending invite even without URL param (e.g., after email confirmation)
-        const savedToken = localStorage.getItem('pendingInviteToken');
-        if (savedToken && !inviteToken) {
-          setInviteToken(savedToken);
-          // Re-check and accept
-          (async () => {
-            const { data: invitation } = await getInvitationByToken(savedToken);
-            if (invitation) {
-              const { success } = await acceptInvitation(savedToken);
-              if (success) {
-                localStorage.removeItem('pendingInviteToken');
-                await refetchRole();
-              }
-            } else {
-              localStorage.removeItem('pendingInviteToken');
-            }
-            redirectBasedOnRole();
-          })();
-        } else {
-          redirectBasedOnRole();
-        }
-      }
+    if (!user || authLoading || roleLoading) return;
+
+    // Step 1: Admin setup takes priority
+    if (isAdminSetup && noAdminExists) {
+      handleAdminSetup();
+      return;
     }
-  }, [user, authLoading, roleLoading, role, isAdminSetup]);
+
+    // Step 2: If we have a valid invite token (from URL), accept it
+    if (inviteToken && inviteValid) {
+      handleAcceptInvitation();
+      return;
+    }
+
+    // Step 3: Check localStorage for pending invite (after email confirmation redirect)
+    const savedToken = localStorage.getItem('pendingInviteToken');
+    if (savedToken && !inviteToken) {
+      // Set token and trigger async acceptance
+      (async () => {
+        const { data: invitation } = await getInvitationByToken(savedToken);
+        if (invitation) {
+          setInviteToken(savedToken);
+          setInviteValid(true);
+          const { success } = await acceptInvitation(savedToken);
+          if (success) {
+            localStorage.removeItem('pendingInviteToken');
+            await refetchRole();
+            const { data: newRole } = await supabase.rpc('get_user_role', { _user_id: user.id });
+            if (newRole === 'admin') navigate('/admin', { replace: true });
+            else if (newRole === 'coach') navigate('/coach', { replace: true });
+            else if (newRole === 'client') navigate('/client', { replace: true });
+            return;
+          }
+        } else {
+          localStorage.removeItem('pendingInviteToken');
+        }
+        // If invitation invalid or acceptance failed, redirect based on existing role
+        if (role) redirectBasedOnRole();
+      })();
+      return;
+    }
+
+    // Step 4: Normal role-based redirect
+    if (role) {
+      redirectBasedOnRole();
+    }
+  }, [user, authLoading, roleLoading, role, isAdminSetup, inviteToken, inviteValid]);
 
   const handleAdminSetup = async () => {
     if (!user) return;
