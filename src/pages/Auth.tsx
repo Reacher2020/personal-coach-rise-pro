@@ -67,6 +67,7 @@ const Auth = () => {
       localStorage.setItem('pendingInviteToken', token);
       setInviteToken(token);
       setInviteChecking(true);
+      setShowSignup(true);
       checkInvitation(token);
     } else {
       const savedToken = localStorage.getItem('pendingInviteToken');
